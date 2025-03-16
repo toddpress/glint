@@ -215,4 +215,4 @@ MIT License – Use it freely!
   - 🔗 Works anywhere: Use inside React, Vue, Svelte, or vanilla JS.
 
 
- <p>✨ Glint – The Lightweight UI Framework We've been waiting for ✨</p>
+ <p>✨ Glint – The lightweight UI framework we've been waiting for ✨</p>
