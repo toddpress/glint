@@ -15,13 +15,13 @@
 ## 🚀 Quick Start
 Glint runs directly in the browser—no setup required.
 
-### 1️⃣ Install
+### 1️⃣ Install (Coming soon!)
 
-#### Via npm/etc. (Coming soon!):
+#### Via npm/etc.:
 ```sh
 npm install glint-js
 ```
-#### or just use CDN (Coming soon!):
+#### or just use CDN:
 
 ```html
 <script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
