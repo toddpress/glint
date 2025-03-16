@@ -1,0 +1,12 @@
+{
+  "name": "glint",
+  "description": "A lightweight custom element framework with signals, computed values and more.",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 8000 --directory ./examples/basic"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
