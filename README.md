@@ -17,7 +17,7 @@ Glint runs directly in the browser—no setup required.
 
 ### 1️⃣ Install (Coming soon!)
 
-#### Via npm/etc.:
+#### Via `npm`:
 ```sh
 npm install glint-js
 ```
