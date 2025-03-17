@@ -18,6 +18,10 @@
 > Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**. While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
 > In essence... Proceed with caution if you need production stability!
 
+## MVP Todo
+- [ ] Implement arbitrary property binding, e.g. `:value=${mySignal}`. Only form input types' value property has partial support.
+- [ ] Devise suitable data structure for more direct updates to a signals dependent nodes (and attr maybe), e.g. `Map<Signal, Node>`
+
 ## 🚀 Quick Start
 Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/NPWyKRB?editors=1010)!
 
