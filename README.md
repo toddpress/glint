@@ -95,7 +95,7 @@ component("my-counter", () => {
   `;
 });
 ```
-
+<!--
 ### 🔗 Real Scoped Styles (No CSS-in-JS)
 
 ```js
@@ -106,6 +106,7 @@ component("styled-box", () => html`
   <div>Styled Box</div>
 `);
 ```
+-->
 
 ### ⚡ Computed State (No useMemo)
 
