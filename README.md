@@ -19,8 +19,9 @@
 > In essence... Proceed with caution if you need production stability!
 
 ## MVP Todo
-- [ ] Implement arbitrary property binding, e.g. `:value=${mySignal}`. Only form inputs' value property has partial support.
+- [ ] Arbitrary property binding, e.g. `:value=${mySignal}`. Only form inputs' value property has partial support.
 - [ ] Devise suitable data structure for more direct updates to a signals dependent nodes (and attr maybe), e.g. `Map<Signal, Node>`
+- [ ] Scoped and global styling; e.g. via `css` tag function and, for scoped, `css.scoped`
 
 ## 🚀 Quick Start
 Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/NPWyKRB?editors=1010)!
