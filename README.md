@@ -2,7 +2,7 @@
 
 ## 🔥 The no-bullshit web component framework 🔥
 
-🚀 Glint is a fast, build-less Web Component-based UI framework that makes reactive web development simple and fun — All without the VDOM, complex hooks, or build tools.
+🚀 Glint is a fast, build-less native web component-based UI framework that makes reactive web development simple and fun again — All without the virtual DOM, complex hooks, or build tools.
 
   - ✅ No Babel, No JSX, No Webpack
   - ✅ Native Web Components & Scoped Styles
@@ -12,8 +12,14 @@
 
 > 💡 Think React, but simpler, faster, and without the bloat.
 
+## ⚠️ Disclaimer
+**👉 Use `lit-element` or `React`/`Preact` if you require production-grade component abstractions.** Glint is conceptually awesome, but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏 
+
+> Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**. While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
+> In essence... Proceed with caution if you need production stability!
+
 ## 🚀 Quick Start
-Glint runs directly in the browser—no setup required.
+Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/NPWyKRB?editors=1010)!
 
 ### 1️⃣ Install (Coming soon!)
 
@@ -140,10 +146,12 @@ theme.value = "light";  // Updates all subscribers
 Uses native event listeners, unlike React’s synthetic event system.
 
 ## 🎬 Live Demo
-
+  <p><b><a href="https://codepen.io/toddpress/pen/NPWyKRB?editors=1010">DEMO</a></b> on Codepen</p>
+  
+  > 💡 Glint was developed entirely on Codepen... Thank you Chris Coyer (:
+  
   🚀 Check out the interactive playground:
-
-  👉 Glint Sandbox (Coming soon!)
+  - 👉 Glint Sandbox (Coming soon!)
 
 ## 🛠️ API Reference
 
@@ -196,14 +204,13 @@ return html`<button>${count}</button>`;
 npm install glint-js
 ```
 ```js
-import { component, signal, html } from "glint-framework";
+import { component, signal, html } from "glint-js";
 ```
 
 ## 🤝 Contributing
 
 🚀 Want to help shape Glint? Open an issue or submit a PR!
-
-👉 GitHub Issues (Coming soon!)
+  - 👉 GitHub Issues (Coming soon!)
 
 ## 📜 License
 MIT License – Use it freely!
@@ -214,5 +221,8 @@ MIT License – Use it freely!
   - 🎨 Scoped styles for free: No CSS-in-JS, no extra tooling.
   - 🔗 Works anywhere: Use inside React, Vue, Svelte, or vanilla JS.
 
+<br />
+<br />
+<br />
 
- <p>✨ Glint – The lightweight UI framework we've been waiting for ✨</p>
+<h3 style="text-align: center;">✨ Glint – The lightweight UI framework we've been waiting for (that we're waiting for 😉) ✨</h3></center>
