@@ -225,4 +225,4 @@ MIT License – Use it freely!
 <br />
 <br />
 
-<h3>✨ Glint – The lightweight UI framework we've been waiting for (that we're waiting for 😉) ✨</h3>
+### ✨ Glint – The lightweight UI framework we've been waiting for (that we're waiting for 😉) ✨
