@@ -1,4 +1,4 @@
-# Glint ✨
+# Glint ✨ [WIP] 
 
 ## 🔥 The no-bullshit web component framework 🔥
 
