@@ -19,7 +19,7 @@
 > In essence... Proceed with caution if you need production stability!
 
 ## MVP Todo
-- [ ] Implement arbitrary property binding, e.g. `:value=${mySignal}`. Only form input types' value property has partial support.
+- [ ] Implement arbitrary property binding, e.g. `:value=${mySignal}`. Only form inputs' value property has partial support.
 - [ ] Devise suitable data structure for more direct updates to a signals dependent nodes (and attr maybe), e.g. `Map<Signal, Node>`
 
 ## 🚀 Quick Start
