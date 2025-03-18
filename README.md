@@ -1,6 +1,6 @@
 # Glint ✨ [WIP] 
 
-## 🔥 The no-bullshit web component framework 🔥
+## 🔥 The no-bullshit, bullshit web component framework 🔥
 
 🚀 Glint is a fast, build-less native web component-based UI framework that makes reactive web development simple and fun again — All without the virtual DOM, complex hooks, or build tools.
 
