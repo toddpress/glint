@@ -13,7 +13,7 @@
 > 💡 Think React, but simpler, faster, and without the bloat.
 
 ## ⚠️ Disclaimer
-**👉 Use `lit-element` or `React`/`Preact` if you require production-grade component abstractions.** Glint is conceptually awesome, but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏 
+**👉 Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.** Glint is conceptually awesome, but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏 
 
 > Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**. While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
 > In essence... Proceed with caution if you need production stability!
