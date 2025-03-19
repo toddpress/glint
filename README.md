@@ -38,7 +38,7 @@ npm install glint-js
 <script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
 ```
 
-### 2️⃣ Define a Component
+### 2️⃣ Define a custom component
 
 ```js
 import { component, signal, html } from "glint-js";
@@ -54,11 +54,28 @@ component("counter-button", ({ start = 0 }) => {
 });
 ```
 
-### 3️⃣ Use It Like HTML
+### 3️⃣ Use it in other components
 
 ```html
 <counter-button start="5"></counter-button>
 ```
+
+### 4️⃣ Bootstrap your Glint✨ App entrypoint
+
+```js
+// top-level app component
+const App = () => html`
+  <div>
+      <counter-button start="5" />
+  </div>
+`;
+  // bootstrapping in entry point
+  render(App, {
+    autoRegister: true,
+    rootNode: document.querySelector('#glint-app')
+  })
+```
+
 Boom! 💥 Your component just works—no build step, no config, no bullshit.
 
 ## 🎯 Why Glint?
@@ -66,9 +83,12 @@ Boom! 💥 Your component just works—no build step, no config, no bullshit.
   - ✅ No VDOM Overhead → Faster, direct DOM updates.
   - ✅ Zero Build Step → Works without Babel/Webpack/Vite.
   - ✅ Signals & Computed State → No useEffect boilerplate.
-  - ✅ Scoped Styles for Free → No CSS-in-JS needed.
   - ✅ Event Binding Like HTML → Just use @click=${fn}.
   - ✅ Native Web Standards → No lock-in, just HTML, JS, and CSS.
+
+<!--
+  - ✅ Scoped Styles for Free → No CSS-in-JS needed.
+-->
 
 ## 🔍 React vs. Glint
 
@@ -77,10 +97,12 @@ Boom! 💥 Your component just works—no build step, no config, no bullshit.
 | **Build Tools** | Required (Babel, Webpack) | 🚀 **None** (Runs in browser) |
 | **Reactivity**  | Hooks (`useState`, `useEffect`) | 🚀 **Signals & Computed State** |
 | **Event Handling** | Synthetic Events | 🚀 **Native DOM Events** (`@click=${fn}`) |
-| **Scoped Styles**  | CSS-in-JS, Emotion | 🚀 **Built-in Shadow DOM** |
 | **Context API**    | Required for state sharing | 🚀 **Global `store()`** (No Prop Drilling) |
 | **Performance**    | VDOM Reconciliation | 🚀 **Direct DOM Updates** |
 
+<!--
+| **Scoped Styles**  | CSS-in-JS, Emotion | 🚀 **Built-in Shadow DOM** |
+-->
 ## 📖 Features
 
 ### 🛠️ Simple, Reactive Components
