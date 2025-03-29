@@ -1,16 +1,8 @@
 let _currentComponentStack = [];
 
-export function getCurrentComponent() {
-  return _currentComponentStack[_currentComponentStack.length - 1];
-}
-
-export function pushCurrentComponent(comp) {
-  _currentComponentStack.push(comp);
-}
-
-export function popCurrentComponent() {
-  _currentComponentStack.pop();
-}
+export const getCurrentComponent = () => _currentComponentStack.at(-1);
+export const pushCurrentComponent = (comp) => _currentComponentStack.push(comp);
+export const popCurrentComponent = () => _currentComponentStack.pop();
 
 export function onMount(cb) {
   const comp = getCurrentComponent();
