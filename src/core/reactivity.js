@@ -1,8 +1,8 @@
+import { getCurrentComponent } from './lifecycle.js';
 import {
-  getCurrentComponent,
   debounce,
   isFunction
-} from './index.js';
+} from './utils.js';
 
 let activeSubscriber = null;
 

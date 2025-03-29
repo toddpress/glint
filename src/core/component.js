@@ -1,12 +1,17 @@
+import { removeAllEventListeners } from './event.js';
+
 import {
-  removeAllEventListeners,
-  pushCurrentComponent,
-  popCurrentComponent,
-  signal,
-  generateUuid,
-  safeParse,
-  isFunction
-} from './index.js';
+    pushCurrentComponent,
+    popCurrentComponent,
+} from './lifecycle.js';
+
+import { signal } from './reactivity.js';
+
+import {
+    generateUuid,
+    safeParse,
+    isFunction
+} from './utils.js';
 
 export const componentRegistry = new Map();
 
@@ -32,10 +37,12 @@ export function registerComponent(name) {
     customElements.define(
         name,
         class extends HTMLElement {
-            _uuid = generateUuid();
             static styles = new Set();
+
             props = {};
             hooks = { onMount: [], onDestroy: [] };
+
+            _uuid = generateUuid();
             _renderScheduled = false;
 
             constructor() {
@@ -46,6 +53,7 @@ export function registerComponent(name) {
                 );
                 this.attachShadow({ mode: 'open' });
                 this._initPropsFromAttributes();
+                this.dataset.id = this._getTaggedUuid();
                 this._mutationObserver.observe(this, {
                     attributes: true,
                     attributeOldValue: true,
@@ -68,11 +76,14 @@ export function registerComponent(name) {
                 this.effectsCleanupFns = [];
             }
 
+            _getTaggedUuid = (tag) =>
+                [name, tag, this._uuid].filter(Boolean).join('_');
+
             _applyStyles = () => {
                 if (!this.constructor.styles.size) return;
                 const tag = document.createElement('style');
                 tag.type = 'text/css';
-                tag.id = `${name}_${this._uuid}`;
+                tag.dataset.styleId = this._getTaggedUuid('style');
                 tag.textContent = [...this.constructor.styles].join('\n\n');
                 this.shadowRoot.appendChild(tag);
             };
