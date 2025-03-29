@@ -35,7 +35,8 @@ export function debounce(fn, delay, { leading = false, trailing = true } = {}) {
   };
 }
 
-export const generateUuid = () => crypto.generateUUID();
+export const generateUuid = () =>
+  Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 export const isFunction = (value) => typeof value === 'function'
 

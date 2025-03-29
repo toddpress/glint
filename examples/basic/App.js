@@ -5,7 +5,7 @@ import * as all from './components/index.js';
 //? -> from a module. it is used in the render function below. This is necessary
 //? -> for the component function to register its renderer with the Glint componentRegistry.
 
-const App = () => html`
+export const App = () => html`
     <section>
         <h3>Updates:</h3>
         <ul>

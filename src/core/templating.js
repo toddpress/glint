@@ -3,6 +3,7 @@ import {
   isSignalLike,
   removeAllEventListeners,
   eventListenersMap,
+  getCurrentComponent,
 } from './index.js'
 
 const templateCache = new WeakMap();
