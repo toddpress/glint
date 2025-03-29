@@ -1,10 +1,7 @@
-import {
-  effect,
-  isSignalLike,
-  removeAllEventListeners,
-  eventListenersMap,
-  getCurrentComponent,
-} from './index.js'
+import { effect } from './reactivity.js'
+import { eventListenersMap, removeAllEventListeners } from './event.js'
+import { getCurrentComponent } from './lifecycle.js'
+import { isSignalLike } from './utils.js'
 
 const templateCache = new WeakMap();
 

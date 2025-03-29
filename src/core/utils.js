@@ -1,4 +1,4 @@
-import { componentRegistry } from "./index.js";
+import { componentRegistry } from "./component.js";
 
 export const isSignalLike = (obj) =>
   typeof obj === 'function' && typeof obj.subscribe === 'function';
