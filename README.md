@@ -1,4 +1,4 @@
-# Glint ✨ [WIP] 
+# Glint ✨ [WIP]
 
 ## 🔥 The no-bullshit, bullshit web component framework 🔥
 
@@ -13,20 +13,23 @@
 > 💡 Think React, but simpler, faster, and without the bloat.
 
 ## ⚠️ Disclaimer
-**👉 Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.** Glint is conceptually awesome, but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏 
+**👉 Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.** Glint is conceptually awesome, but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏
 
 > Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**. While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
 > In essence... Proceed with caution if you need production stability!
-
-## MVP Todo
-- [ ] Arbitrary property binding, e.g. `:value=${mySignal}`. Only form inputs' value property has partial support.
-- [ ] Devise suitable data structure for more direct updates to a signals dependent nodes (and attr maybe), e.g. `Map<Signal, Node>`
-- [ ] Scoped and global styling; e.g. via `css` tag function and, for scoped, `css.scoped`
 
 ## 🚀 Quick Start
 Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/NPWyKRB?editors=1010)!
 
 ### 1️⃣ Install (Coming soon!)
+
+For now, you can clone the repo and use the `src/index.js` file in your project.
+
+```html
+<script type="module" src="path/to/src/index.js"></script>
+```
+
+<!--
 
 #### Via `npm`:
 ```sh
@@ -37,6 +40,7 @@ npm install glint-js
 ```html
 <script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
 ```
+-->
 
 ### 2️⃣ Define a custom component
 
@@ -47,7 +51,7 @@ component("counter-button", ({ start = 0 }) => {
   const count = signal(Number(start));
 
   return html`
-    <button @click=${() => count.value++}>
+    <button @click=${() => count(count() + 1)}>
       Clicked ${count} times
     </button>
   `;
@@ -65,9 +69,9 @@ component("counter-button", ({ start = 0 }) => {
 ```js
 // top-level app component
 const App = () => html`
-  <div>
-      <counter-button start="5" />
-  </div>
+  <main>
+    <counter-button start="5" />
+  </main>
 `;
   // bootstrapping in entry point
   render(App, {
@@ -83,12 +87,9 @@ Boom! 💥 Your component just works—no build step, no config, no bullshit.
   - ✅ No VDOM Overhead → Faster, direct DOM updates.
   - ✅ Zero Build Step → Works without Babel/Webpack/Vite.
   - ✅ Signals & Computed State → No useEffect boilerplate.
+  - ✅ Scoped Styles for Free → No CSS-in-JS needed.
   - ✅ Event Binding Like HTML → Just use @click=${fn}.
   - ✅ Native Web Standards → No lock-in, just HTML, JS, and CSS.
-
-<!--
-  - ✅ Scoped Styles for Free → No CSS-in-JS needed.
--->
 
 ## 🔍 React vs. Glint
 
@@ -112,7 +113,7 @@ Define components using signals—no hooks needed.
 component("my-counter", () => {
   const count = signal(0);
   return html`
-    <button @click=${() => count.value++}>
+    <button @click=${() => count(count() + 1)}>
       Count: ${count}
     </button>
   `;
@@ -158,12 +159,12 @@ component("custom-card", () => html`
 </custom-card>
 ```
 
-### 🌍 Global State Without Context API
-
+### 🌍 Global State Without Context API (Coming soon!)
+<!--
 ```js
 const theme = store("dark");
 theme.value = "light";  // Updates all subscribers
-```
+``` -->
 
 ### 🚀 Event Delegation, No Re-Renders
 
@@ -175,22 +176,22 @@ Uses native event listeners, unlike React’s synthetic event system.
 
 ## 🎬 Live Demo
   <p><b><a href="https://codepen.io/toddpress/pen/NPWyKRB?editors=1010">DEMO</a></b> on Codepen</p>
-  
+
   > 💡 Glint was developed entirely on Codepen... Thank you Chris Coyer (:
-  
+
   🚀 Check out the interactive playground:
   - 👉 Glint Sandbox (Coming soon!)
 
 ## 🛠️ API Reference
 
-### 1️⃣ `component(name, rendererFn)`
+### `component(name, rendererFn)`
 Registers a Web Component.
 
 ```js
 component("hello-world", () => html`<h1>Hello, World!</h1>`);
 ```
 
-#### 2️⃣ `signal(initialValue)`
+#### `signal(initialValue)`
 Creates reactive state.
 
 ```js
@@ -198,42 +199,48 @@ const count = signal(0);
 count.value++;
 ```
 
-#### 3️⃣ `computed(fn)`
+#### `computed(fn)`
 Creates a derived state.
 
 ```js
 const double = computed(() => count.value * 2);
 ```
 
-#### 4️⃣ `store(initialValue)`
-Global state management.
-
-```js
-const user = store({ name: "Alice" });
-```
-
-#### 5️⃣ `html` Tagged Template
+#### `html` Tagged Template
 Tagged template for templating.
 
 ```js
 return html`<button>${count}</button>`;
 ```
 
+<!-- #### `store(initialValue)`
+Global state management.
+
+```js
+const user = store({ name: "Alice" });
+``` -->
+
 ## 💻 Installation & Usage
 
-#### 1️⃣ Using CDN (Coming soon!)
+### 0️⃣ Clone the repo
+```sh
+  git clone https://github.com/toddpress/glint.git
+```
 
+ #### 1️⃣ Using CDN (Coming soon!)
+<!--
 ```html
 <script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
 ```
-
-#### 2️⃣ Install with NPM
+-->
+#### 2️⃣ Install with NPM (Coming soon!)
+<!--
 ```sh
 npm install glint-js
 ```
 ```js
 import { component, signal, html } from "glint-js";
-```
+``` -->
 
 ## 🤝 Contributing
 

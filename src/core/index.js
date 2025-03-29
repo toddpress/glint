@@ -21,7 +21,6 @@ export {
 
 export {
   signal,
-  Signal,
   effect,
   computed,
   debouncedSignal,
@@ -29,6 +28,7 @@ export {
 
 export {
   html,
+  css,
 } from './templating.js';
 
 export {
@@ -36,6 +36,6 @@ export {
   safeParse,
   isFunction,
   isSignalLike,
-  isFormElement,
   isGlintComponent,
+  generateUuid,
 } from './utils.js';

@@ -1,6 +1,6 @@
 import {
   render
-} from '../../src/core/index.js'
+} from '../../src/index.js'
 
 // Import the App component
 import { App as _App_ } from './App.js'

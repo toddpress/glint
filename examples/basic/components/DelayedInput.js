@@ -1,35 +1,38 @@
 import {
   html,
+  effect,
   component,
   onMount,
   onDestroy,
   debouncedSignal,
-  effect
-} from '../../../src/core/index.js';
+} from '../../../src/index.js';
 
 export const DelayedInput = component('tsp-delayed-input', () => {
   const delayedText = debouncedSignal(' ', 1000, {
-    leading: false,
-    trailing: true
+      leading: false,
+      trailing: true,
   });
 
+  function setDelayedText(e) {
+      const text = e?.target?.value ?? ''
+      delayedText(text);
+  }
+
   onMount(() => {
-    console.log('[DelayedInput] - component mounted');
+      console.log('[DelayedInput] - component mounted');
   });
 
   onDestroy(() => {
-    console.log('[DelayedInput] - component unmounted');
+      console.log('[DelayedInput] - component unmounted');
   });
 
   effect(() => {
-    console.log('[DelayedInput] - text changed:', delayedText.value);
+      console.log('[DelayedInput] - text changed:', delayedText());
   });
 
   return html`
-    <div>
-      <input type="text" value="${delayedText}" />
-      <pre>${delayedText}</pre>
-    </div>
+    <input type="text" :value=${delayedText} @input="${setDelayedText}" />
+    <pre>${delayedText}</pre>
   `;
 });
 
