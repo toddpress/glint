@@ -19,7 +19,7 @@
 > In essence... Proceed with caution if you need production stability!
 
 ## 🚀 Quick Start
-Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/NPWyKRB?editors=1010)!
+Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/wBvYgyJ)!
 
 ### 1️⃣ Install (Coming soon!)
 
