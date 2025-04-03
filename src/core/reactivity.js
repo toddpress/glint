@@ -6,78 +6,82 @@ import {
 
 let activeSubscriber = null;
 
-export function signal(initialValue) {
-    let _value = initialValue;
-    const subscribers = new Set();
+export function createSignalAccessor(initialValue, onSet) {
+  let value = initialValue;
+  const subscribers = new Set();
 
-    function accessor(newValue) {
-        if (arguments.length === 0) {
-            activeSubscriber && subscribers.add(activeSubscriber);
-            return _value;
-        }
-        if (Object.is(_value, newValue)) return;
-        _value = newValue;
-        subscribers.forEach((fn) => fn());
+  function _setValue(newValue) {
+    if (Object.is(value, newValue)) return;
+    value = newValue;
+    subscribers.forEach((fn) => fn(value));
+  }
+
+  const defaultOnSet = (newValue, setValue) => {
+    setValue(newValue);
+  };
+
+  function set(newValue) {
+    const _onSet = onSet || defaultOnSet;
+    _onSet(newValue, _setValue);
+  }
+
+  function get() {
+    if (activeSubscriber) {
+      subscribers.add(activeSubscriber);
     }
+    return value;
+  }
 
-    accessor.subscribe = (fn) => {
-        subscribers.add(fn);
-        return () => subscribers.delete(fn);
-    };
+  function subscribe(fn) {
+    subscribers.add(fn);
+    return () => subscribers.delete(fn);
+  }
 
-    return accessor;
+  function accessor(newValue) {
+    return arguments.length === 0 ? get() : set(newValue);
+  }
+
+  accessor.subscribe = subscribe;
+
+  return accessor;
+}
+
+export function withTracking(fn, subscriber) {
+  activeSubscriber = subscriber;
+  const result = fn();
+  activeSubscriber = null;
+  return result;
+}
+
+export function signal(initialValue) {
+  return createSignalAccessor(initialValue);
 }
 
 export function computed(fn) {
-    const accessor = signal(fn());
-    function update() {
-        activeSubscriber = update;
-        accessor(fn());
-        activeSubscriber = null;
-    }
-    update();
-    return accessor;
+  const accessor = signal(fn());
+  function update() {
+    withTracking(() => accessor(fn()), update);
+  }
+  update();
+  return accessor;
 }
 
 export function effect(fn) {
-    const comp = getCurrentComponent();
-    if (!comp) return;
-    function run() {
-      activeSubscriber = run;
-      const cleanup = fn();
-      activeSubscriber = null;
-      if (isFunction(cleanup)) comp.effectsCleanupFns.push(cleanup);
-    }
-    run();
+  const comp = getCurrentComponent();
+  if (!comp) return;
+  function run() {
+    const cleanup = withTracking(fn, run);
+    if (!isFunction(cleanup)) return;
+    comp.effectsCleanupFns.push(cleanup);
+  }
+  run();
 }
 
 export function debouncedSignal(
-    initialValue,
-    delay = 300,
-    { leading = false, trailing = true } = {},
+  initialValue,
+  delay = 300,
+  options = { leading: false, trailing: true }
 ) {
-    let _value = initialValue;
-    const subscribers = new Set();
-    const debouncedSet = debounce(
-        (val) => {
-            if (Object.is(_value, val)) return;
-            _value = val;
-            subscribers.forEach((fn) => fn(_value));
-        },
-        delay,
-        { leading, trailing },
-    );
-
-    function accessor(newValue) {
-        if (arguments.length === 0) {
-            if (activeSubscriber) subscribers.add(activeSubscriber);
-            return _value;
-        }
-        debouncedSet(newValue);
-    }
-    accessor.subscribe = (fn) => {
-        subscribers.add(fn);
-        return () => subscribers.delete(fn);
-    };
-    return accessor;
+  const debouncedSetter = debounce((val, setter) => setter(val), delay, options);
+  return createSignalAccessor(initialValue, debouncedSetter);
 }

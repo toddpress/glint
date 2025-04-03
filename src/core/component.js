@@ -13,128 +13,159 @@ import {
     isFunction
 } from './utils.js';
 
+
 export const componentRegistry = new Map();
 
-export function component(name, renderer) {
+export function component(
+  name,
+  renderer,
+  options,
+) {
     if (!/^[a-z][a-z0-9]*-[a-z0-9-]+$/.test(name))
         throw new Error(`Invalid custom element name: '${name}'.`);
-    componentRegistry.set(name, renderer);
+    componentRegistry.set(name, { renderer, options });
+}
+
+const getDefaultBaseComponentOptions = (partial = {}) => ({
+  useShadow: true,
+  ...partial
+})
+class BaseComponent extends HTMLElement {
+  static styles = new Set();
+  static renderer = () => () => {};
+  static options = {}
+
+  props = {};
+  hooks = { onMount: [], onDestroy: [] };
+
+  #uuid = generateUuid();
+  #renderScheduled = false;
+
+  constructor() {
+      super();
+
+      const {
+        useShadow,
+        ...rest
+      } = getDefaultBaseComponentOptions(this.constructor.options);
+
+      this.effectsCleanupFns = [];
+      this.dataset.id = this._getTaggedUuid();
+
+      this._root = useShadow
+        ? this.attachShadow({ mode: 'open' })
+        : this;
+      this._initPropsFromAttributes();
+      this.mutationObserver = new MutationObserver(this.onAttributesChanged);
+      this.mutationObserver.observe(this, {
+          attributes: true,
+          attributeOldValue: true,
+      });
+  }
+
+  connectedCallback() {
+      this._scheduleRender();
+      queueMicrotask(() => {
+          this._applyStyles();
+          this.hooks.onMount.forEach((fn) => fn());
+      });
+  }
+
+  disconnectedCallback() {
+      this.mutationObserver.disconnect();
+      removeAllEventListeners(this._root);
+      this.hooks.onDestroy.forEach((fn) => fn());
+      this.effectsCleanupFns.forEach((fn) => fn());
+      this.effectsCleanupFns = [];
+  }
+
+  _getTaggedUuid = (tag) => [
+      name,
+      tag,
+      this.uuid
+    ].filter(Boolean).join('_');
+
+  _applyStyles = () => {
+      if (!this.constructor.styles.size) return;
+      const tag = document.createElement('style');
+      tag.type = 'text/css';
+      tag.dataset.styleId = this._getTaggedUuid('style');
+      tag.textContent = [...this.constructor.styles].join('\n\n');
+      this._root.appendChild(tag);
+  };
+
+  _initPropsFromAttributes() {
+      for (const { name, value } of this.attributes) {
+          this._setReactiveProp(name, safeParse(value));
+      }
+  }
+
+  onAttributesChanged = (mutations) => {
+      for (const { attributeName, oldValue } of mutations) {
+          const newValue = this.getAttribute(attributeName);
+          if (oldValue === newValue) continue;
+          this._setReactiveProp(attributeName, safeParse(newValue));
+      }
+  };
+
+  _setReactiveProp = (name, value) => {
+      if (!this.props[name]) {
+          this.props[name] = signal(value);
+          this.props[name].subscribe(this._scheduleRender);
+      } else {
+          this.props[name](value);
+      }
+  };
+
+  _scheduleRender = () => {
+      if (this.renderScheduled) return;
+      this.renderScheduled = true;
+      queueMicrotask(() => {
+          this.renderScheduled = false;
+          if (!this.isConnected) return;
+          this._render();
+      });
+  };
+
+  _render = () => {
+      pushCurrentComponent(this);
+
+      const _props = Object.entries(this.props)
+        .reduce((acc, [key, sig]) => {
+          acc[key] = sig();
+          return acc;
+        }, {});
+
+      const renderFn = this.constructor.renderer(_props);
+
+      if (isFunction(renderFn)) renderFn(this._root);
+
+      popCurrentComponent();
+  };
 }
 
 export function registerAllComponents() {
-    componentRegistry.forEach((renderer, name) => {
-        if (customElements.get(name)) return;
-        registerComponent(name, renderer);
+    componentRegistry.forEach(({ renderer, options }, name) => {
+        if (!customElements.get(name)) registerComponent(name, renderer, options);
     });
 }
 
-export function registerComponent(name) {
+export function registerComponent(
+  name,
+  renderer,
+  options,
+) {
     if (customElements.get(name)) return;
-    const renderer = componentRegistry.get(name);
-    if (!renderer)
+    const entry = componentRegistry.get(name);
+    if (!entry)
         throw new Error(`Component ${name} is not defined in the registry.`);
 
     customElements.define(
         name,
-        class extends HTMLElement {
-            static styles = new Set();
-
-            props = {};
-            hooks = { onMount: [], onDestroy: [] };
-
-            _uuid = generateUuid();
-            _renderScheduled = false;
-
-            constructor() {
-                super();
-                this.effectsCleanupFns = [];
-                this._mutationObserver = new MutationObserver(
-                    this._onAttributesChanged,
-                );
-                this.attachShadow({ mode: 'open' });
-                this._initPropsFromAttributes();
-                this.dataset.id = this._getTaggedUuid();
-                this._mutationObserver.observe(this, {
-                    attributes: true,
-                    attributeOldValue: true,
-                });
-            }
-
-            connectedCallback() {
-                this._scheduleRender();
-                queueMicrotask(() => {
-                    this._applyStyles();
-                    this.hooks.onMount.forEach((fn) => fn());
-                });
-            }
-
-            disconnectedCallback() {
-                this._mutationObserver.disconnect();
-                removeAllEventListeners(this.shadowRoot);
-                this.hooks.onDestroy.forEach((fn) => fn());
-                this.effectsCleanupFns.forEach((fn) => fn());
-                this.effectsCleanupFns = [];
-            }
-
-            _getTaggedUuid = (tag) =>
-                [name, tag, this._uuid].filter(Boolean).join('_');
-
-            _applyStyles = () => {
-                if (!this.constructor.styles.size) return;
-                const tag = document.createElement('style');
-                tag.type = 'text/css';
-                tag.dataset.styleId = this._getTaggedUuid('style');
-                tag.textContent = [...this.constructor.styles].join('\n\n');
-                this.shadowRoot.appendChild(tag);
-            };
-
-            _initPropsFromAttributes() {
-                for (const { name, value } of this.attributes) {
-                    this._setReactiveProp(name, safeParse(value));
-                }
-            }
-
-            _onAttributesChanged = (mutations) => {
-                for (const { attributeName, oldValue } of mutations) {
-                    const newValue = this.getAttribute(attributeName);
-                    if (oldValue === newValue) continue;
-                    this._setReactiveProp(attributeName, safeParse(newValue));
-                }
-            };
-
-            _setReactiveProp = (name, value) => {
-                if (!this.props[name]) {
-                    this.props[name] = signal(value);
-                    this.props[name].subscribe(this._scheduleRender);
-                } else {
-                    this.props[name](value);
-                }
-            };
-
-            _scheduleRender = () => {
-                if (this._renderScheduled) return;
-                this._renderScheduled = true;
-                queueMicrotask(() => {
-                    this._renderScheduled = false;
-                    if (!this.isConnected) return;
-                    this._render();
-                });
-            };
-
-            _render = () => {
-                pushCurrentComponent(this);
-                const _props = Object.entries(this.props).reduce(
-                    (acc, [key, sig]) => {
-                        acc[key] = sig();
-                        return acc;
-                    },
-                    {},
-                );
-                const renderFn = renderer(_props);
-                if (isFunction(renderFn)) renderFn(this.shadowRoot);
-                popCurrentComponent();
-            };
-        },
+        class extends BaseComponent {
+          static renderer = renderer;
+          static options = options;
+        }
     );
 }
 
