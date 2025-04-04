@@ -1,11 +1,11 @@
-# Glint ✨ [WIP]
+# Glint ✨
 
 ## 🔥 The no-bullshit, bullshit web component framework 🔥
 
 🚀 Glint is a fast, build-less native web component-based UI framework that makes reactive web development simple and fun again — All without the virtual DOM, complex hooks, or build tools.
 
   - ✅ No Babel, No JSX, No Webpack
-  - ✅ Native Web Components & Scoped Styles
+  - ✅ Native Web Components & Scoped Styles by Default
   - ✅ Fine-Grained Reactivity Without Re-Renders
   - ✅ Auto-Batching, No useEffect Hell
   - ✅ Built-in State Management, No Context API Needed
@@ -19,9 +19,9 @@
 > In essence... Proceed with caution if you need production stability!
 
 ## 🚀 Quick Start
-Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/wBvYgyJ)!
+Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/ogNVvoL?editors=0010)!
 
-### 1️⃣ Install (Coming soon!)
+### 1️⃣ [WIP] NPM Install
 
 For now, you can clone the repo and use the `src/index.js` file in your project.
 
@@ -29,18 +29,17 @@ For now, you can clone the repo and use the `src/index.js` file in your project.
 <script type="module" src="path/to/src/index.js"></script>
 ```
 
-<!--
-
-#### Via `npm`:
+#### [WIP] Via `npm`:
 ```sh
 npm install glint-js
 ```
-#### or just use CDN:
+
+#### [WIP] or just use CDN:
 
 ```html
 <script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
 ```
--->
+
 
 ### 2️⃣ Define a custom component
 
@@ -87,7 +86,7 @@ Boom! 💥 Your component just works—no build step, no config, no bullshit.
   - ✅ No VDOM Overhead → Faster, direct DOM updates.
   - ✅ Zero Build Step → Works without Babel/Webpack/Vite.
   - ✅ Signals & Computed State → No useEffect boilerplate.
-  - ✅ Scoped Styles for Free → No CSS-in-JS needed.
+  - ✅ Scoped Styles for Free → Just like native components. There's even an escape hatch.
   - ✅ Event Binding Like HTML → Just use @click=${fn}.
   - ✅ Native Web Standards → No lock-in, just HTML, JS, and CSS.
 
@@ -119,9 +118,20 @@ component("my-counter", () => {
   `;
 });
 ```
-<!--
-### 🔗 Real Scoped Styles (No CSS-in-JS)
 
+### 🔗 Real Scoped Styles
+
+```js
+component("styled-box", () => {
+  css`
+    div { background: purple; padding: 1em; color: white; }
+  `
+  return html`<div>Styled Box</div>`  
+});
+```
+
+<!--
+NEWER SYNTAX:
 ```js
 component("styled-box", () => html`
   <style>
@@ -132,10 +142,23 @@ component("styled-box", () => html`
 ```
 -->
 
+<!--
+Glint ships with an escape hatch to web components' scoped-by-default styles:
+
+```js
+component("styled-box-w-esc-hatch", () => html`
+  <style global>
+    div { background: purple; padding: 1em; color: white; }
+  </style>
+  <div>Styled Box</div>
+`);
+```
+-->
+
 ### ⚡ Computed State (No useMemo)
 
 ```js
-const doubleCount = computed(() => count.value * 2);
+const doubleCount = computed(() => count() * 2);
 ```
 
 ### 🎭 Slots & Composition
@@ -159,12 +182,11 @@ component("custom-card", () => html`
 </custom-card>
 ```
 
-### 🌍 Global State Without Context API (Coming soon!)
-<!--
+### 🌍 [WIP] Global State Without Context API
 ```js
 const theme = store("dark");
-theme.value = "light";  // Updates all subscribers
-``` -->
+theme("light");  // Updates all subscribers
+```
 
 ### 🚀 Event Delegation, No Re-Renders
 
@@ -175,7 +197,7 @@ theme.value = "light";  // Updates all subscribers
 Uses native event listeners, unlike React’s synthetic event system.
 
 ## 🎬 Live Demo
-  <p><b><a href="https://codepen.io/toddpress/pen/NPWyKRB?editors=1010">DEMO</a></b> on Codepen</p>
+  <p><b><a href="https://codepen.io/toddpress/pen/ogNVvoL?editors=0010">DEMO</a></b> on Codepen</p>
 
   > 💡 Glint was developed entirely on Codepen... Thank you Chris Coyer (:
 
@@ -196,14 +218,17 @@ Creates reactive state.
 
 ```js
 const count = signal(0);
-count.value++;
+count(count() + 1);
+
+console.log(count());
+//> 1
 ```
 
 #### `computed(fn)`
-Creates a derived state.
+Creates a derived state variable.
 
 ```js
-const double = computed(() => count.value * 2);
+const double = computed(() => count() * 2);
 ```
 
 #### `html` Tagged Template
@@ -213,12 +238,13 @@ Tagged template for templating.
 return html`<button>${count}</button>`;
 ```
 
-<!-- #### `store(initialValue)`
+#### [WIP] `store(initialValue)`
 Global state management.
 
 ```js
+// NOTE: UNIMPLEMENTED
 const user = store({ name: "Alice" });
-``` -->
+```
 
 ## 💻 Installation & Usage
 
@@ -227,20 +253,26 @@ const user = store({ name: "Alice" });
   git clone https://github.com/toddpress/glint.git
 ```
 
- #### 1️⃣ Using CDN (Coming soon!)
-<!--
+ #### 1️⃣ [WIP] Using CDN
+ 
 ```html
+<!-- NOTE: UNIMPLEMENTED -->
 <script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
 ```
--->
-#### 2️⃣ Install with NPM (Coming soon!)
-<!--
+
+#### 2️⃣ [WIP] Install with NPM
+
 ```sh
+# NOTE: UNIMPLEMENTED!
 npm install glint-js
 ```
+
+Then, in your components:
+
 ```js
+// NOTE: UNIMPLEMENTED
 import { component, signal, html } from "glint-js";
-``` -->
+```
 
 ## 🤝 Contributing
 
@@ -260,4 +292,8 @@ MIT License – Use it freely!
 <br />
 <br />
 
-### ✨ Glint – The lightweight UI framework we've been waiting for (that we're waiting for 😉) ✨
+### ✨ Glint – The lightweight UI framework we've been waiting for... that we're waiting for 😉 
+
+<h1 style="width: 100%; display: flex; justify-content: center; font-size: 9.6rem;">
+  <span>✨</span>
+</h1>
