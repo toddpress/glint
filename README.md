@@ -12,10 +12,17 @@
 
 > 💡 Think React, but simpler, faster, and without the bloat.
 
+## Motivation
+
+**We need a low-barrier, low-bullshit way of creating and consuming _real_ web components**. The DX for native web components kinda sucks... That's why I started work on this. 
+
+And please -- steal this idea and make something better... Or contribute.
+
 ## ⚠️ Disclaimer
-**👉 Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.**
 
 > Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**.
+
+👉 **Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.**
 
 While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
 
@@ -66,20 +73,21 @@ component("counter-button", ({ start = 0 }) => {
 <counter-button start="5"></counter-button>
 ```
 
-### 4️⃣ Bootstrap your Glint✨ App entrypoint
+### 4️⃣ Bootstrap your app, add entrypoint
 
 ```js
 // top-level app component
-const App = () => html`
+const _App_ = () => html`
   <main>
     <counter-button start="5" />
   </main>
 `;
-  // bootstrapping in entry point
-  render(App, {
-    autoRegister: true,
-    rootNode: document.querySelector('#glint-app')
-  })
+
+// bootstrap app in entry point
+render(_App_, {
+  autoRegister: true,
+  rootNode: document.querySelector('#glint-app')
+})
 ```
 
 Boom! 💥 Your component just works—no build step, no config, no bullshit.
@@ -202,9 +210,10 @@ Uses native event listeners, unlike React’s synthetic event system.
 ## 🎬 Live Demo
   <p><b><a href="https://codepen.io/toddpress/pen/ogNVvoL?editors=0010">DEMO</a></b> on Codepen</p>
 
-  > 💡 Glint was developed entirely on Codepen... Thank you Chris Coyer (:
+  > 💡 Fun fact: Glint was developed entirely on Codepen... Thanks, Chris Coyer! (:
 
   🚀 Check out the interactive playground:
+  
   - 👉 Glint Sandbox (Coming soon!)
 
 ## 🛠️ API Reference
@@ -288,7 +297,7 @@ MIT License – Use it freely!
 ## 🎯 TL;DR
   - 🚀 No JSX, No build step, Just Web Components.
   - ⚡ No VDOM, only updates what changes.
-  - 🎨 Scoped styles for free: No CSS-in-JS, no extra tooling.
+  - 🎨 Scoped styles for free, no extra tooling.
   - 🔗 Works anywhere: Use inside React, Vue, Svelte, or vanilla JS.
 
 <br />
@@ -296,7 +305,3 @@ MIT License – Use it freely!
 <br />
 
 ### ✨ Glint – The lightweight UI framework we've been waiting for... that we're waiting for 😉 
-
-<h1 style="width: 100%; display: flex; justify-content: center; font-size: 9.6rem;">
-  <span>✨</span>
-</h1>
