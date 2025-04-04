@@ -13,10 +13,13 @@
 > 💡 Think React, but simpler, faster, and without the bloat.
 
 ## ⚠️ Disclaimer
-**👉 Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.** Glint is conceptually awesome, but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏
+**👉 Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.**
 
-> Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**. While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
-> In essence... Proceed with caution if you need production stability!
+> Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**.
+
+While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
+
+In essence... Proceed with <b>EXTREME</b> caution if you need production stability! Glint is conceptually awesome (if I say so myself), but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏
 
 ## 🚀 Quick Start
 Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/ogNVvoL?editors=0010)!
