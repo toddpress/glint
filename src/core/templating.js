@@ -2,6 +2,7 @@ import { effect } from './reactivity.js'
 import { eventListenersMap, removeAllEventListeners } from './event.js'
 import { getCurrentComponent } from './lifecycle.js'
 import { isSignalLike } from './utils.js'
+import { componentRegistry, componentPathRegistry, loadComponent } from './component.js'
 
 const templateCache = new WeakMap();
 
@@ -85,9 +86,58 @@ function processSingleAttribute(node, attr, values, listeners) {
 }
 
 function processElementNode(node, values, listeners) {
+  // Process attributes
   Array.from(node.attributes).forEach((attr) =>
     processSingleAttribute(node, attr, values, listeners)
   );
+
+  // Check if this is a custom element that needs to be lazy loaded
+  const tagName = node.tagName.toLowerCase();
+  if (tagName.includes('-') && !customElements.get(tagName)) {
+    handleUnregisteredComponent(tagName);
+  }
+
+  // Process child elements recursively
+  Array.from(node.children).forEach(child => {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const childTagName = child.tagName.toLowerCase();
+      if (childTagName.includes('-') && !customElements.get(childTagName)) {
+        handleUnregisteredComponent(childTagName);
+      }
+    }
+  });
+}
+
+/**
+ * Handle an unregistered component by attempting to load it
+ * @param {string} tagName - The tag name of the component
+ */
+function handleUnregisteredComponent(tagName) {
+  // Check if the component is in either registry
+  const isInRegistry = componentRegistry.has(tagName);
+  const isInPathRegistry = componentPathRegistry.has(tagName);
+
+  if (!isInRegistry && !isInPathRegistry) {
+    console.warn(`Unknown component: ${tagName}. Make sure it's registered with component() or lazyComponent().`);
+    return;
+  }
+
+  if (isInRegistry) {
+    // Component is in the registry but not registered with customElements yet
+    // This will be handled by registerAllComponents() in render()
+    return;
+  }
+
+  if (isInPathRegistry) {
+    // We'll use the actual tag name but mark it as loading
+    // The element will be created with the PlaceholderComponent class
+    // which adds the data-loading attribute
+
+    // Start loading the component (registration will happen automatically in the placeholder's connectedCallback)
+    loadComponent(tagName).catch(error => {
+      console.error(`Failed to load component ${tagName}:`, error);
+    });
+  }
 }
 
 export function html(strings, ...values) {
@@ -103,6 +153,7 @@ export function html(strings, ...values) {
       NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT
     );
 
+    // First pass: process text nodes and attributes
     while (walker.nextNode()) {
       const node = walker.currentNode;
       if (node.nodeType === Node.TEXT_NODE) {

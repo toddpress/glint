@@ -1,6 +1,10 @@
 export {
   render,
   component,
+  lazyComponent,
+  loadComponent,
+  registerLoadedComponent,
+  importAndRegisterComponent,
 } from './core/component.js';
 export {
   onMount,

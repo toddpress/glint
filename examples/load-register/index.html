@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glint - Load and Register Example</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #eee;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #08c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+    button:hover {
+      background-color: #0077b3;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: 'Courier New', Courier, monospace;
+    }
+    
+    /* Style for loading components */
+    [data-loading] {
+      min-height: 20px;
+      position: relative;
+      outline: 1px dashed #ccc;
+      background-color: #f9f9f9;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .component-container {
+      margin: 20px 0;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    
+    .status {
+      font-size: 0.8em;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .status.success {
+      color: green;
+    }
+    
+    .status.error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

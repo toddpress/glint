@@ -9,6 +9,9 @@
   - ✅ Fine-Grained Reactivity Without Re-Renders
   - ✅ Auto-Batching, No useEffect Hell
   - ✅ Built-in State Management, No Context API Needed
+  - ✅ Lazy Loading Components On-Demand
+  - ✅ Auto-Naming Components from Export Names
+  - ✅ Separate Load and Register Functions
 
 > 💡 Think React, but simpler, faster, and without the bloat.
 
@@ -90,6 +93,9 @@ Boom! 💥 Your component just works—no build step, no config, no bullshit.
   - ✅ Scoped Styles for Free → No CSS-in-JS needed.
   - ✅ Event Binding Like HTML → Just use @click=${fn}.
   - ✅ Native Web Standards → No lock-in, just HTML, JS, and CSS.
+  - ✅ Lazy Loading → Load components on-demand for better performance.
+  - ✅ Auto-Naming → Derive tag names from export names.
+  - ✅ Separate Load/Register → More control over component lifecycle.
 
 ## 🔍 React vs. Glint
 
@@ -100,6 +106,8 @@ Boom! 💥 Your component just works—no build step, no config, no bullshit.
 | **Event Handling** | Synthetic Events | 🚀 **Native DOM Events** (`@click=${fn}`) |
 | **Context API**    | Required for state sharing | 🚀 **Global `store()`** (No Prop Drilling) |
 | **Performance**    | VDOM Reconciliation | 🚀 **Direct DOM Updates** |
+| **Code Splitting** | Dynamic imports, React.lazy | 🚀 **Lazy Component Loading** |
+| **Component Names** | Explicit declaration | 🚀 **Auto-derived from exports** |
 
 <!--
 | **Scoped Styles**  | CSS-in-JS, Emotion | 🚀 **Built-in Shadow DOM** |
@@ -159,6 +167,62 @@ component("custom-card", () => html`
 </custom-card>
 ```
 
+### 🚀 Lazy Loading Components
+
+```js
+// Register components for lazy loading
+import { lazyComponent } from "glint-js";
+
+lazyComponent("my-counter", "./components/Counter.js");
+
+// Enable lazy loading in the render function
+render(App, {
+  lazyLoad: true,
+  rootNode: document.getElementById("app")
+});
+```
+
+Components are loaded on-demand when they're first used in the DOM.
+
+### 🎁 Auto-Naming Components
+
+```js
+import { component } from "glint-js";
+
+// Function name 'Button' will be converted to 'gl-button'
+function Button({ label }) {
+  return html`<button>${label}</button>`;
+}
+
+// Register with auto-naming
+component(Button);
+
+// For lazy loading, derive name from file path
+lazyComponent("./components/UserProfile.js"); // -> user-profile
+```
+
+No need to manually specify tag names - they're derived from export names.
+
+### 🔑 Separate Load and Register
+
+```js
+import { loadComponent, registerLoadedComponent } from "glint-js";
+
+// Load the component but don't register it yet
+loadComponent("my-counter").then(() => {
+  console.log("Component loaded successfully");
+});
+
+// Later, when needed
+registerLoadedComponent("my-counter");
+
+// Create and use the component
+const counter = document.createElement("my-counter");
+document.body.appendChild(counter);
+```
+
+More control over the component lifecycle with separate loading and registration.
+
 ### 🌍 Global State Without Context API (Coming soon!)
 <!--
 ```js
@@ -184,14 +248,50 @@ Uses native event listeners, unlike React’s synthetic event system.
 
 ## 🛠️ API Reference
 
-### `component(name, rendererFn)`
+### `component(name, rendererFn)` or `component(rendererFn)`
 Registers a Web Component.
 
 ```js
+// With explicit name
 component("hello-world", () => html`<h1>Hello, World!</h1>`);
+
+// With auto-naming (derives 'gl-button' from function name)
+function Button({ label }) {
+  return html`<button>${label}</button>`;
+}
+component(Button);
 ```
 
-#### `signal(initialValue)`
+### `lazyComponent(name, path)` or `lazyComponent(path)`
+Registers a component for lazy loading.
+
+```js
+// With explicit name
+lazyComponent("my-counter", "./components/Counter.js");
+
+// With auto-naming (derives 'user-profile' from file name)
+lazyComponent("./components/UserProfile.js");
+```
+
+### `loadComponent(name)`
+Loads a component module without registering it.
+
+```js
+// Load the component but don't register it yet
+loadComponent("my-counter").then(() => {
+  console.log("Component loaded successfully");
+});
+```
+
+### `registerLoadedComponent(name)`
+Registers a component that has been loaded.
+
+```js
+// Register the component when needed
+const registered = registerLoadedComponent("my-counter");
+```
+
+### `signal(initialValue)`
 Creates reactive state.
 
 ```js
@@ -199,14 +299,14 @@ const count = signal(0);
 count.value++;
 ```
 
-#### `computed(fn)`
+### `computed(fn)`
 Creates a derived state.
 
 ```js
 const double = computed(() => count.value * 2);
 ```
 
-#### `html` Tagged Template
+### `html` Tagged Template
 Tagged template for templating.
 
 ```js
@@ -255,6 +355,9 @@ MIT License – Use it freely!
   - ⚡ No VDOM, only updates what changes.
   - 🎨 Scoped styles for free: No CSS-in-JS, no extra tooling.
   - 🔗 Works anywhere: Use inside React, Vue, Svelte, or vanilla JS.
+  - 📦 Lazy loading: Load components on-demand for better performance.
+  - 🎁 Auto-naming: Derive tag names from export names.
+  - 🔑 Separate load/register: More control over component lifecycle.
 
 <br />
 <br />

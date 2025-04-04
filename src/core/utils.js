@@ -45,3 +45,26 @@ export function isGlintComponent(node) {
   const tagName = node.tagName.toLowerCase();
   return customElements.get(tagName) && componentRegistry.has(tagName);
 }
+
+/**
+ * Converts a PascalCase export name to a kebab-case tag name
+ * - Single word components get a "gl-" prefix (e.g., "Button" → "gl-button")
+ * - Multi-word components are converted to kebab-case (e.g., "UserProfile" → "user-profile")
+ *
+ * @param {string} exportName - The export name in PascalCase
+ * @returns {string} The kebab-case tag name
+ */
+export function toTagName(exportName) {
+  // Handle null, undefined, or empty strings
+  if (!exportName) return null;
+
+  // Extract words by looking for capital letters
+  const words = exportName.match(/[A-Z][a-z]*/g);
+  if (!words || words.length === 0) return null;
+
+  // For single-word components, add "gl-" prefix
+  // For multi-word components, convert to kebab-case
+  return words.length === 1
+    ? `gl-${words[0].toLowerCase()}`
+    : words.map(w => w.toLowerCase()).join('-');
+}

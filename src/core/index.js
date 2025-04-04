@@ -1,9 +1,14 @@
 export {
   render,
   component,
+  lazyComponent,
   componentRegistry,
+  componentPathRegistry,
   registerComponent,
   registerAllComponents,
+  loadComponent,
+  registerLoadedComponent,
+  importAndRegisterComponent,
 } from './component.js';
 
 export {
