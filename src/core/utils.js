@@ -45,3 +45,12 @@ export function isGlintComponent(node) {
   const tagName = node.tagName.toLowerCase();
   return customElements.get(tagName) && componentRegistry.has(tagName);
 }
+
+export function exportNameToTagName(exportName) {
+  const words = exportName.match(/[A-Z][a-z]*/g);
+  if (!words || words.length === 0) return null;
+  const result = words.length === 1
+    ? `gl-${exportName}`
+    : words.join('-');
+  return result.toLowerCase();
+}
