@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glint Constructed Stylesheets Test</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Glint Constructed Stylesheets Test</h1>
+  <div id="glint-app"></div>
+
+  <script type="module">
+    import { 
+      component, 
+      html, 
+      css, 
+      signal, 
+      render 
+    } from '../dist/glint.js';
+
+    // Component with styles using <style> tag
+    const StyleTagComponent = component('gl-style-tag', () => {
+      css`
+        <style>
+          :host {
+            display: block;
+            padding: 1rem;
+            border: 2px solid blue;
+            margin-bottom: 1rem;
+          }
+          h2 {
+            color: blue;
+          }
+        </style>
+      `;
+
+      return html`
+        <h2>Component with Style Tag</h2>
+        <p>These styles are applied using Constructed Stylesheets</p>
+      `;
+    });
+
+    // Component with styles using plain CSS text (legacy)
+    const PlainCssComponent = component('gl-plain-css', () => {
+      css`
+        :host {
+          display: block;
+          padding: 1rem;
+          border: 2px solid green;
+          margin-bottom: 1rem;
+        }
+        h2 {
+          color: green;
+        }
+      `;
+
+      return html`
+        <h2>Component with Plain CSS</h2>
+        <p>These styles are applied using Constructed Stylesheets (legacy syntax)</p>
+      `;
+    });
+
+    // Component with link tag
+    const LinkStylesComponent = component('gl-link-styles', () => {
+      css`
+        <link rel="stylesheet" href="shared/styles.css">
+      `;
+
+      return html`
+        <h2>Component with Linked Stylesheet</h2>
+        <p>This component loads an external stylesheet</p>
+        <div class="spinning">✨</div>
+      `;
+    });
+
+    // Multiple instances to test stylesheet sharing
+    const MultipleInstancesComponent = component('gl-multiple', () => {
+      // This style should be shared across all instances
+      css`
+        <style>
+          :host {
+            display: block;
+            padding: 0.5rem;
+            border: 1px dashed purple;
+            margin: 0.5rem 0;
+          }
+          p {
+            color: purple;
+          }
+        </style>
+      `;
+
+      const count = signal(0);
+      
+      return html`
+        <p>Instance ${count}</p>
+        <button @click=${() => count(count() + 1)}>Increment</button>
+      `;
+    });
+
+    // App component
+    const App = () => html`
+      <gl-style-tag></gl-style-tag>
+      <gl-plain-css></gl-plain-css>
+      <gl-link-styles></gl-link-styles>
+      
+      <h3>Multiple Instances (sharing stylesheets)</h3>
+      <gl-multiple></gl-multiple>
+      <gl-multiple></gl-multiple>
+      <gl-multiple></gl-multiple>
+    `;
+
+    // Render the app
+    render(App, { 
+      autoRegister: true, 
+      rootNode: document.querySelector('#glint-app') 
+    });
+  </script>
+</body>
+</html>

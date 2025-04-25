@@ -49,15 +49,17 @@ export function component(
     componentRegistry.set(name, { renderer, options });
 }
 
-// Default component options
-const DEFAULT_OPTIONS = {
-  useShadow: true
-}
+const getDefaultBaseComponentOptions = (partial = {}) => ({
+  useShadow: true,
+  ...partial
+})
 class BaseComponent extends HTMLElement {
+  // Use Map to store CSSStyleSheet objects (key: cssText, value: CSSStyleSheet)
+  static styleSheets = new Map();
+  // Fallback for browsers without Constructed Stylesheets support
   static styles = new Set();
+  // Store link hrefs
   static styleLinks = new Set();
-  static globalStyles = new Set();
-  static globalStyleLinks = new Set();
   static renderer = () => () => {};
   static options = {}
 
@@ -68,7 +70,7 @@ class BaseComponent extends HTMLElement {
   #renderScheduled = false;
 
   _getDefaultOptions = (partial = {}) => ({
-    ...DEFAULT_OPTIONS,
+    useShadow: true,
     ...partial
   })
   constructor() {
@@ -115,16 +117,27 @@ class BaseComponent extends HTMLElement {
   _applyStyles = () => {
       const constructor = this.constructor;
 
-      // Apply local styles to shadow root
-      if (constructor.styles.size) {
-          const styleTag = document.createElement('style');
-          styleTag.type = 'text/css';
-          styleTag.dataset.styleId = this._getTaggedUuid('style');
-          styleTag.textContent = [...constructor.styles].join('\n\n');
-          this._root.appendChild(styleTag);
+      // Try to use Constructed Stylesheets for shadow root if supported
+      if (this._root instanceof ShadowRoot && 'adoptedStyleSheets' in this._root) {
+          // Apply constructed stylesheets to shadow root
+          if (constructor.styleSheets.size) {
+              try {
+                  this._root.adoptedStyleSheets = [
+                      ...this._root.adoptedStyleSheets || [],
+                      ...Array.from(constructor.styleSheets.values())
+                  ];
+              } catch (e) {
+                  console.warn('Error applying adoptedStyleSheets:', e);
+                  // Fall back to traditional style elements
+                  this._applyStylesFallback();
+              }
+          }
+      } else {
+          // Fallback for browsers without adoptedStyleSheets support
+          this._applyStylesFallback();
       }
 
-      // Apply local style links to shadow root
+      // Apply style links to shadow root
       constructor.styleLinks.forEach(href => {
           const linkTag = document.createElement('link');
           linkTag.rel = 'stylesheet';
@@ -132,32 +145,16 @@ class BaseComponent extends HTMLElement {
           linkTag.dataset.styleId = this._getTaggedUuid('link');
           this._root.appendChild(linkTag);
       });
+  };
 
-      // Apply global styles to document head
-      constructor.globalStyles.forEach(css => {
-          // Check if this global style is already in the document
-          const styleId = `${constructor.name}-global-style`;
-          if (!document.head.querySelector(`style[data-style-id="${styleId}"]`)) {
-              const styleTag = document.createElement('style');
-              styleTag.type = 'text/css';
-              styleTag.dataset.styleId = styleId;
-              styleTag.textContent = css;
-              document.head.appendChild(styleTag);
-          }
-      });
+  _applyStylesFallback = () => {
+      const constructor = this.constructor;
+      if (!constructor.styles.size) return;
 
-      // Apply global style links to document head
-      constructor.globalStyleLinks.forEach(href => {
-          // Check if this global link is already in the document
-          const linkId = `${constructor.name}-global-link-${href.replace(/[^a-z0-9]/gi, '-')}`;
-          if (!document.head.querySelector(`link[data-style-id="${linkId}"]`)) {
-              const linkTag = document.createElement('link');
-              linkTag.rel = 'stylesheet';
-              linkTag.href = href;
-              linkTag.dataset.styleId = linkId;
-              document.head.appendChild(linkTag);
-          }
-      });
+      const styleTag = document.createElement('style');
+      styleTag.dataset.styleId = this._getTaggedUuid('style');
+      styleTag.textContent = [...constructor.styles].join('\n\n');
+      this._root.appendChild(styleTag);
   };
 
   _initPropsFromAttributes() {
@@ -184,10 +181,10 @@ class BaseComponent extends HTMLElement {
   };
 
   _scheduleRender = () => {
-      if (this.#renderScheduled) return;
-      this.#renderScheduled = true;
+      if (this.renderScheduled) return;
+      this.renderScheduled = true;
       queueMicrotask(() => {
-          this.#renderScheduled = false;
+          this.renderScheduled = false;
           if (!this.isConnected) return;
           this._render();
       });
@@ -283,33 +280,63 @@ function css(strings, ...values) {
   Array.from(tempDiv.childNodes).forEach(node => {
     // Handle <style> tags
     if (node.nodeName === 'STYLE') {
-      const isGlobal = node.hasAttribute('global');
       const styleContent = node.textContent;
 
-      if (isGlobal) {
-        componentClass.globalStyles.add(styleContent);
-      } else if (!componentClass.styles.has(styleContent)) {
-        componentClass.styles.add(styleContent);
+      // Try to create a CSSStyleSheet if supported
+      if (window.CSSStyleSheet && 'replaceSync' in CSSStyleSheet.prototype) {
+        try {
+          // Only create if we don't already have this style
+          if (!componentClass.styleSheets.has(styleContent)) {
+            const sheet = new CSSStyleSheet();
+            sheet.replaceSync(styleContent);
+            componentClass.styleSheets.set(styleContent, sheet);
+          }
+        } catch (e) {
+          console.warn('Error creating CSSStyleSheet:', e);
+          // Fall back to traditional style elements
+          if (!componentClass.styles.has(styleContent)) {
+            componentClass.styles.add(styleContent);
+          }
+        }
+      } else {
+        // Fallback for browsers without Constructed Stylesheets
+        if (!componentClass.styles.has(styleContent)) {
+          componentClass.styles.add(styleContent);
+        }
       }
     }
     // Handle <link> tags
     else if (node.nodeName === 'LINK' && node.getAttribute('rel') === 'stylesheet') {
-      const isGlobal = node.hasAttribute('global');
       const href = node.getAttribute('href');
-
-      if (!href) return;
-
-      if (isGlobal) {
-        componentClass.globalStyleLinks.add(href);
-      } else {
+      if (href) {
         componentClass.styleLinks.add(href);
       }
     }
     // Handle plain CSS text (legacy support)
     else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
       const cssText = node.textContent.trim();
-      if (cssText && !componentClass.styles.has(cssText)) {
-        componentClass.styles.add(cssText);
+      if (cssText) {
+        // Try to create a CSSStyleSheet if supported
+        if (window.CSSStyleSheet && 'replaceSync' in CSSStyleSheet.prototype) {
+          try {
+            if (!componentClass.styleSheets.has(cssText)) {
+              const sheet = new CSSStyleSheet();
+              sheet.replaceSync(cssText);
+              componentClass.styleSheets.set(cssText, sheet);
+            }
+          } catch (e) {
+            console.warn('Error creating CSSStyleSheet:', e);
+            // Fall back to traditional style elements
+            if (!componentClass.styles.has(cssText)) {
+              componentClass.styles.add(cssText);
+            }
+          }
+        } else {
+          // Fallback for browsers without Constructed Stylesheets
+          if (!componentClass.styles.has(cssText)) {
+            componentClass.styles.add(cssText);
+          }
+        }
       }
     }
   });
