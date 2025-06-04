@@ -1,14 +1,20 @@
+// === event.js ===
 export const eventListenersMap = new WeakMap();
 
-export function removeAllEventListeners(node) {
-  if (!node || !eventListenersMap.has(node)) return;
+/**
+ * Removes all tracked event listeners from a node and its descendants.
+ */
+export const removeAllEventListeners = (root) => {
+  if (!root || !eventListenersMap.has(root)) return;
 
-  const allNodes = [node, ...node.querySelectorAll('*')];
-  allNodes.forEach((el) => {
-    const listeners = eventListenersMap.get(el) || [];
-    listeners.forEach(({ event, listener }) => {
-      el.removeEventListener(event, listener);
-    });
-    eventListenersMap.delete(el);
-  });
-}
+  const nodes = [root, ...root.querySelectorAll('*')];
+  nodes.forEach(removeListenersFrom);
+};
+
+
+const removeListenersFrom = (node) => {
+  const listeners = eventListenersMap.get(node);
+  if (!listeners) return;
+  listeners.forEach(({ event, listener }) => node.removeEventListener(event, listener));
+  eventListenersMap.delete(node);
+};

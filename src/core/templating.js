@@ -1,119 +1,92 @@
-import { effect } from './reactivity.js'
-import { eventListenersMap, removeAllEventListeners } from './event.js'
-import { getCurrentComponent } from './lifecycle.js'
-import { isSignalLike } from './utils.js'
+// === templating.js ===
+import { effect } from './reactivity.js';
+import { eventListenersMap, removeAllEventListeners } from './event.js';
+import { getCurrentComponent } from './lifecycle.js';
+import { isSignalLike, isFunction } from './utils.js';
 
 const templateCache = new WeakMap();
 
-export function css(strings, ...values) {
-  const compiled = strings.reduce((acc, s, i) => acc + s + (values[i] || ''), '');
-  const componentClass = getCurrentComponent()?.constructor;
-
-  if (componentClass && !componentClass.styles.has(compiled)) {
-    componentClass.styles.add(compiled);
-  }
-
+export const css = (strings, ...values) => {
+  const compiled = strings.reduce((acc, str, i) => acc + str + (values[i] ?? ''), '');
+  const compClass = getCurrentComponent()?.constructor;
+  compClass?.styles.add(compiled);
   return compiled;
-}
+};
 
-function getOrCreateTemplate(strings) {
-  if (templateCache.has(strings)) return templateCache.get(strings);
+const getTemplateFromStrings = (strings) =>
+  templateCache.get(strings) ||
+  (() => {
+    const template = document.createElement('template');
+    template.innerHTML = strings.reduce((acc, str, i) =>
+      acc + str + (i < strings.length - 1 ? `{{${i}}}` : ''), '');
+    templateCache.set(strings, template);
+    return template;
+  })();
 
-  const template = document.createElement('template');
-  template.innerHTML = strings.reduce((acc, str, i) =>
-    acc + str + (i < strings.length - 1 ? `{{${i}}}` : ''),
-  '');
+const createExpressionFn = val => isSignalLike(val) ? val : () => val;
 
-  templateCache.set(strings, template);
-  return template;
-}
+const interpolateText = (text, exprFns, matchTokens) =>
+  matchTokens.reduce((out, token, i) => out.replace(token[0], exprFns[i]() ?? ''), text);
 
-function createExpressionFunction(val) {
-  return isSignalLike(val) ? val : () => val;
-}
+const processTextNode = (node, values) => {
+  const original = node.textContent;
+  const matches = [...original.matchAll(/{{(\d+)}}/g)];
+  if (!matches.length) return;
 
-function processTextNode(node, values) {
-  const originalText = node.textContent;
-  const matches = [...originalText.matchAll(/{{(\d+)}}/g)];
-
-  if (matches.length === 0) return;
-
-  const exprFns = matches.map(([, index]) =>
-    createExpressionFunction(values[Number(index)])
-  );
+  const exprFns = matches.map(([, i]) => createExpressionFn(values[+i]));
 
   effect(() => {
-    const textContent = matches.reduce((text, match, i) =>
-      text.replace(match[0], exprFns[i]() ?? ''), originalText);
-    node.textContent = textContent;
+    node.textContent = interpolateText(original, exprFns, matches);
   });
-}
+};
 
-function processSingleAttribute(node, attr, values, listeners) {
-  const { name, value: strValue } = attr;
-  const match = strValue.match(/{{(\d+)}}/);
-
+const processAttribute = (node, attr, values, listeners) => {
+  const { name, value: str } = attr;
+  const match = str.match(/{{(\d+)}}/);
   if (!match) return;
 
-  const value = values[Number(match[1])];
+  const val = values[+match[1]];
+  const expr = createExpressionFn(val);
+
+  const cleanAttr = () => node.removeAttribute(name);
 
   if (name.startsWith('@')) {
-      const event = name.slice(1);
-      const listener = value;
-      node.addEventListener(event, listener);
-      listeners.push({ node, event, listener });
-      node.removeAttribute(name);
+    const event = name.slice(1);
+    node.addEventListener(event, val);
+    listeners.push({ node, event, listener: val });
+    cleanAttr();
   } else {
-    const isPropertyBinding = name.startsWith(':');
-    const exprFn = createExpressionFunction(value);
+    const isProp = name.startsWith(':');
+    const prop = isProp ? name.slice(1) : name;
 
-    const updateProp = function() {
-      const prop = name.slice(1);
-      node[prop] = exprFn();
-      node.removeAttribute(name);
-    }
-    const updateAttribute = function() {
-      node.setAttribute(name, exprFn() ?? '')
-    }
-
-    const effectFn = isPropertyBinding
-      ? updateProp
-      : updateAttribute;
-
-    effect(effectFn)
+    effect(() => {
+      const result = expr();
+      isProp ? (node[prop] = result) : node.setAttribute(prop, result ?? '');
+      cleanAttr();
+    });
   }
-}
+};
 
-function processElementNode(node, values, listeners) {
-  Array.from(node.attributes).forEach((attr) =>
-    processSingleAttribute(node, attr, values, listeners)
+const processElementNode = (node, values, listeners) =>
+  [...node.attributes].forEach(attr =>
+    processAttribute(node, attr, values, listeners)
   );
-}
 
-export function html(strings, ...values) {
-  return (target) => {
-    const template = getOrCreateTemplate(strings);
-    const fragment = template.content.cloneNode(true);
+const walkAndBind = (frag, values, target) => {
+  const listeners = [];
+  const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    node.nodeType === Node.TEXT_NODE
+      ? processTextNode(node, values)
+      : processElementNode(node, values, listeners);
+  }
+  eventListenersMap.set(target, listeners);
+};
 
-    removeAllEventListeners(target);
-
-    const listeners = [];
-    const walker = document.createTreeWalker(
-      fragment,
-      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT
-    );
-
-    while (walker.nextNode()) {
-      const node = walker.currentNode;
-      if (node.nodeType === Node.TEXT_NODE) {
-        processTextNode(node, values)
-      }
-      else if (node.nodeType === Node.ELEMENT_NODE) {
-        processElementNode(node, values, listeners);
-      }
-    }
-
-    eventListenersMap.set(target, listeners);
-    target.replaceChildren(fragment);
-  };
-}
+export const html = (strings, ...values) => (target) => {
+  const frag = getTemplateFromStrings(strings).content.cloneNode(true);
+  removeAllEventListeners(target);
+  walkAndBind(frag, values, target);
+  target.replaceChildren(frag);
+};

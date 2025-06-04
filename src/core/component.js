@@ -1,39 +1,65 @@
+// === component.js ===
 import { removeAllEventListeners } from './event.js';
-
 import {
-    pushCurrentComponent,
-    popCurrentComponent,
+  pushCurrentComponent,
+  popCurrentComponent,
 } from './lifecycle.js';
-
 import { signal } from './reactivity.js';
-
 import {
-    generateUuid,
-    safeParse,
-    isFunction
+  generateUuid,
+  safeParse,
+  isFunction
 } from './utils.js';
-
+import { getLazyLoaderForTag } from './lazy.js';
 
 export const componentRegistry = new Map();
 
-export function component(
-  name,
-  renderer,
-  options,
-) {
-    if (!/^[a-z][a-z0-9]*-[a-z0-9-]+$/.test(name))
-        throw new Error(`Invalid custom element name: '${name}'.`);
-    componentRegistry.set(name, { renderer, options });
-}
+export const component = (tag, renderer, options = {}) => {
+  if (!/^[a-z][a-z0-9]*-[a-z0-9-]+$/.test(tag)) {
+    throw new Error(`Invalid custom element tag name: '${tag}'`);
+  }
+  if (!isFunction(renderer)) {
+    throw new Error(`Renderer must be a function.`);
+  }
 
-const getDefaultBaseComponentOptions = (partial = {}) => ({
-  useShadow: true,
-  ...partial
-})
-class BaseComponent extends HTMLElement {
+  registerComponent(tag, renderer, options);
+  return renderer;
+};
+
+export const registerComponent = (tag, renderer, options) => {
+  componentRegistry.set(tag, { renderer, options });
+
+  const existing = customElements.get(tag);
+  const isRealComponent = existing?.prototype instanceof GlintComponent;
+  if (!existing || !isRealComponent) {
+    // Define placeholder if undefined or still pointing to placeholder
+    customElements.define(tag, GlintLazyPlaceholder);
+  }
+};
+
+export const registerAllComponents = () =>
+  [...componentRegistry.entries()]
+    .filter(([tag]) => !customElements.get(tag))
+    .forEach(([tag, { renderer, options }]) =>
+      registerComponent(tag, renderer, options)
+    );
+
+export const render = (App, { lazyRegister = false, rootNode = document.body } = {}) => {
+  (lazyRegister ? enableLazyRegistration : registerAllComponents)();
+  const Root = App();
+  isFunction(Root) && Root(rootNode);
+};
+
+const enableLazyRegistration = () =>
+  [...componentRegistry.keys()]
+    .filter((tag) => !customElements.get(tag))
+    .forEach((tag) => customElements.define(tag, GlintLazyPlaceholder));
+
+// === Core Component Base Class ===
+class GlintComponent extends HTMLElement {
   static styles = new Set();
   static renderer = () => () => {};
-  static options = {}
+  static options = {};
 
   props = {};
   hooks = { onMount: [], onDestroy: [] };
@@ -42,138 +68,112 @@ class BaseComponent extends HTMLElement {
   #renderScheduled = false;
 
   constructor() {
-      super();
-
-      const {
-        useShadow,
-        ...rest
-      } = getDefaultBaseComponentOptions(this.constructor.options);
-
-      this.effectsCleanupFns = [];
-      this.dataset.id = this._getTaggedUuid();
-
-      this._root = useShadow
-        ? this.attachShadow({ mode: 'open' })
-        : this;
-      this._initPropsFromAttributes();
-      this.mutationObserver = new MutationObserver(this.onAttributesChanged);
-      this.mutationObserver.observe(this, {
-          attributes: true,
-          attributeOldValue: true,
-      });
+    super();
+    const { useShadow = true } = this.constructor.options;
+    this.dataset.id = this._getTaggedUuid();
+    this._root = useShadow ? this.attachShadow({ mode: 'open' }) : this;
+    this.effectsCleanupFns = [];
+    this._initPropsFromAttributes();
+    this._observeAttributes();
   }
 
   connectedCallback() {
-      this._scheduleRender();
-      queueMicrotask(() => {
-          this._applyStyles();
-          this.hooks.onMount.forEach((fn) => fn());
-      });
+    this._scheduleRender();
+    queueMicrotask(() => {
+      this._applyStyles();
+      this.hooks.onMount.forEach(fn => fn());
+    });
   }
 
   disconnectedCallback() {
-      this.mutationObserver.disconnect();
-      removeAllEventListeners(this._root);
-      this.hooks.onDestroy.forEach((fn) => fn());
-      this.effectsCleanupFns.forEach((fn) => fn());
-      this.effectsCleanupFns = [];
+    this.mutationObserver.disconnect();
+    removeAllEventListeners(this._root);
+    this.hooks.onDestroy.forEach(fn => fn());
+    this.effectsCleanupFns.forEach(fn => fn());
+    this.effectsCleanupFns = [];
   }
 
-  _getTaggedUuid = (tag) => [
-      name,
-      tag,
-      this.uuid
-    ].filter(Boolean).join('_');
+  _getTaggedUuid = (tag) => [this.tagName.toLowerCase(), tag, this.#uuid].filter(Boolean).join('_');
 
   _applyStyles = () => {
-      if (!this.constructor.styles.size) return;
-      const tag = document.createElement('style');
-      tag.type = 'text/css';
-      tag.dataset.styleId = this._getTaggedUuid('style');
-      tag.textContent = [...this.constructor.styles].join('\n\n');
-      this._root.appendChild(tag);
+    if (!this.constructor.styles.size) return;
+    const style = Object.assign(document.createElement('style'), {
+      type: 'text/css',
+      textContent: [...this.constructor.styles].join('\n\n'),
+      dataset: { styleId: this._getTaggedUuid('style') }
+    });
+    this._root.appendChild(style);
   };
 
-  _initPropsFromAttributes() {
-      for (const { name, value } of this.attributes) {
-          this._setReactiveProp(name, safeParse(value));
-      }
-  }
-
-  onAttributesChanged = (mutations) => {
-      for (const { attributeName, oldValue } of mutations) {
-          const newValue = this.getAttribute(attributeName);
-          if (oldValue === newValue) continue;
-          this._setReactiveProp(attributeName, safeParse(newValue));
-      }
+  _observeAttributes = () => {
+    this.mutationObserver = new MutationObserver(this._onAttrChange);
+    this.mutationObserver.observe(this, { attributes: true, attributeOldValue: true });
   };
+
+  _onAttrChange = (mutations) =>
+    mutations.forEach(({ attributeName, oldValue }) => {
+      const newValue = this.getAttribute(attributeName);
+      if (newValue !== oldValue) {
+        this._setReactiveProp(attributeName, safeParse(newValue));
+      }
+    });
+
+  _initPropsFromAttributes = () =>
+    [...this.attributes].forEach(({ name, value }) =>
+      this._setReactiveProp(name, safeParse(value))
+    );
 
   _setReactiveProp = (name, value) => {
-      if (!this.props[name]) {
-          this.props[name] = signal(value);
-          this.props[name].subscribe(this._scheduleRender);
-      } else {
-          this.props[name](value);
-      }
+    const prop = this.props[name] ||= signal(value);
+    prop(value);
+    prop.subscribe(this._scheduleRender);
   };
 
   _scheduleRender = () => {
-      if (this.renderScheduled) return;
-      this.renderScheduled = true;
-      queueMicrotask(() => {
-          this.renderScheduled = false;
-          if (!this.isConnected) return;
-          this._render();
-      });
+    if (this.renderScheduled) return;
+    this.renderScheduled = true;
+    queueMicrotask(() => {
+      this.renderScheduled = false;
+      this.isConnected && this._render();
+    });
   };
 
   _render = () => {
-      pushCurrentComponent(this);
-
-      const _props = Object.entries(this.props)
-        .reduce((acc, [key, sig]) => {
-          acc[key] = sig();
-          return acc;
-        }, {});
-
-      const renderFn = this.constructor.renderer(_props);
-
-      if (isFunction(renderFn)) renderFn(this._root);
-
-      popCurrentComponent();
+    pushCurrentComponent(this);
+    const props = Object.fromEntries(
+      Object.entries(this.props).map(([k, s]) => [k, s()])
+    );
+    const view = this.constructor.renderer(props);
+    isFunction(view) && view(this._root);
+    popCurrentComponent();
   };
 }
 
-export function registerAllComponents() {
-    componentRegistry.forEach(({ renderer, options }, name) => {
-        if (!customElements.get(name)) registerComponent(name, renderer, options);
-    });
-}
+// === Self-Replacing Placeholder ===
+class GlintLazyPlaceholder extends HTMLElement {
+  async connectedCallback() {
+    const tag = this.tagName.toLowerCase();
 
-export function registerComponent(
-  name,
-  renderer,
-  options,
-) {
-    if (customElements.get(name)) return;
-    const entry = componentRegistry.get(name);
-    if (!entry)
-        throw new Error(`Component ${name} is not defined in the registry.`);
+    const entry = componentRegistry.get(tag);
+    if (!customElements.get(tag) || customElements.get(tag) === GlintLazyPlaceholder) {
+      if (!entry) {
+        const loader = getLazyLoaderForTag(tag);
+        const mod = await loader?.().catch(() => null);
+        const exported = mod?.default ?? mod?.[Object.keys(mod)[0]];
+        if (!isFunction(exported)) return;
+        // exported must call `component()` which will populate componentRegistry
+      }
 
-    customElements.define(
-        name,
-        class extends BaseComponent {
-          static renderer = renderer;
-          static options = options;
-        }
-    );
-}
+      const { renderer, options } = componentRegistry.get(tag);
+      customElements.define(tag, class extends GlintComponent {
+        static renderer = renderer;
+        static options = options;
+      });
+    }
 
-export function render(
-    AppComponent,
-    { autoRegister = true, rootNode = document.body } = {},
-) {
-    if (autoRegister) registerAllComponents();
-    const RootComponent = AppComponent();
-    if (isFunction(RootComponent)) RootComponent(rootNode);
+    const real = document.createElement(tag);
+    [...this.attributes].forEach(attr => real.setAttribute(attr.name, attr.value));
+    real.append(...this.childNodes);
+    this.replaceWith(real);
+  }
 }
