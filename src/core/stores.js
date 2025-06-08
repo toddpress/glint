@@ -16,3 +16,6 @@ export function defineStore(factory) {
     return storeCache.get(context);
   };
 }
+export function resetStores() {
+  storeCache.clear();
+}
