@@ -31,6 +31,13 @@ export function defineScopedStore(factory) {
 }
 
 /**
+ * withMiddleware(store, ...middlewares): applies enhancers to a store object
+ */
+export function withMiddleware(store, ...middlewares) {
+  return middlewares.reduce((acc, mw) => mw(acc), store);
+}
+
+/**
  * resetStores — test/debug only
  */
 export function resetStores() {
