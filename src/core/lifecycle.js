@@ -1,15 +1,29 @@
-let _currentComponentStack = [];
+// === lifecycle.js ===
 
-export const getCurrentComponent = () => _currentComponentStack.at(-1);
-export const pushCurrentComponent = (comp) => _currentComponentStack.push(comp);
-export const popCurrentComponent = () => _currentComponentStack.pop();
+let componentStack = [];
 
-export function onMount(cb) {
+export const getCurrentComponent = () => componentStack.at(-1);
+
+export const pushCurrentComponent = (comp) => {
+  componentStack.push(comp);
+};
+
+export const popCurrentComponent = () => {
+  componentStack.pop();
+};
+
+/**
+ * Adds a callback to run when the component is mounted (connected).
+ */
+export const onMount = (cb) => {
   const comp = getCurrentComponent();
-  if (comp) comp.hooks.onMount.push(cb);
-}
+  comp?.hooks.onMount.push(cb);
+};
 
-export function onDestroy(cb) {
+/**
+ * Adds a callback to run when the component is destroyed (disconnected).
+ */
+export const onDestroy = (cb) => {
   const comp = getCurrentComponent();
-  if (comp) comp.hooks.onDestroy.push(cb);
-}
+  comp?.hooks.onDestroy.push(cb);
+};

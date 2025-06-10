@@ -1,56 +1,37 @@
-import { componentRegistry } from "./component.js";
+// === utils.js ===
 
-export const isSignalLike = (obj) =>
-  typeof obj === 'function' && typeof obj.subscribe === 'function';
+/** Type check for signal-like objects (functions with .subscribe) */
+export const isSignalLike = (val) =>
+  typeof val === 'function' && typeof val.subscribe === 'function';
 
-export function safeParse(str) {
-  if (typeof str !== 'string') return str;
-  const JSON_LIKE = /^\s*(?:\{|\[|'(?:\\.|[^'])*'|true|false|null|-?\d+(?:\.\d+)?)\s*$/;
+/** Type check for any function */
+export const isFunction = (val) =>
+  typeof val === 'function';
+
+/** Attempts to parse a string that looks JSON-ish */
+export const safeParse = (val) => {
+  if (typeof val !== 'string') return val;
+
+  const isJsonLike = /^\s*(?:\{|\[|'(?:\\.|[^'])*'|true|false|null|-?\d+(\.\d+)?)[\s\S]*$/.test(val);
   try {
-    return JSON_LIKE.test(str) ? JSON.parse(str) : str;
+    return isJsonLike ? JSON.parse(val) : val;
   } catch {
-    return str;
+    return val;
   }
-}
+};
 
-export function debounce(fn, delay, { leading = false, trailing = true } = {}) {
-  let timeout, lastArgs, lastThis, result;
-  return function (...args) {
-      lastArgs = args;
-      lastThis = this;
-      const shouldCallNow = leading && !timeout;
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-          timeout = null;
-          if (trailing && lastArgs) {
-              result = fn.apply(lastThis, lastArgs);
-              lastArgs = lastThis = null;
-          }
-      }, delay);
-      if (shouldCallNow) {
-          result = fn.apply(lastThis, lastArgs);
-          lastArgs = lastThis = null;
-      }
-      return result;
-  };
-}
-
+/** Generates a (reasonably) unique identifier string */
 export const generateUuid = () =>
-  Date.now().toString(36) + Math.random().toString(36).slice(2);
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
-export const isFunction = (value) => typeof value === 'function'
-
-export function isGlintComponent(node) {
-  if (!(node instanceof HTMLElement)) return false;
-  const tagName = node.tagName.toLowerCase();
-  return customElements.get(tagName) && componentRegistry.has(tagName);
-}
-
-export function exportNameToTagName(exportName) {
+/** Maps a PascalCase or CamelCase export name to a kebab-case tag name */
+export const exportNameToTagName = (exportName) => {
   const words = exportName.match(/[A-Z][a-z]*/g);
-  if (!words || words.length === 0) return null;
-  const result = words.length === 1
-    ? `gl-${exportName}`
-    : words.join('-');
-  return result.toLowerCase();
-}
+  if (!words) return null;
+  return (words.length === 1 ? `gl-${exportName}` : words.join('-')).toLowerCase();
+};
+
+/** Determines whether an element is a Glint-registered custom element */
+export const isGlintComponent = (node) =>
+  node instanceof HTMLElement &&
+  !!customElements.get(node.tagName.toLowerCase());
