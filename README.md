@@ -86,7 +86,6 @@ const _App_ = () => html`
 
 // bootstrap app in entry point
 render(_App_, {
-    autoRegister: true,
     rootNode: document.querySelector('#glint-app'),
 });
 ```

@@ -31,7 +31,7 @@ export const DelayedInput = component('tsp-delayed-input', () => {
   });
 
   return html`
-    <input type="text" :value=${delayedText} @input="${setDelayedText}" />
+    <input type="text" :value=${delayedText} @input=${setDelayedText} />
     <pre>${delayedText}</pre>
   `;
 });

@@ -130,10 +130,10 @@ class GlintComponent extends HTMLElement {
   };
 
   _scheduleRender = () => {
-    if (this.renderScheduled) return;
-    this.renderScheduled = true;
+    if (this.#renderScheduled) return;
+    this.#renderScheduled = true;
     queueMicrotask(() => {
-      this.renderScheduled = false;
+      this.#renderScheduled = false;
       this.isConnected && this._render();
     });
   };
