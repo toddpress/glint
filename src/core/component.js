@@ -26,6 +26,40 @@ export function component(
     componentRegistry.set(name, { renderer, options });
 }
 
+export function registerComponent(
+  name,
+  renderer,
+  options,
+) {
+    if (customElements.get(name)) return;
+    const entry = componentRegistry.get(name);
+    if (!entry)
+        throw new Error(`Component ${name} is not defined in the registry.`);
+
+    customElements.define(
+        name,
+        class extends BaseComponent {
+          static renderer = renderer;
+          static options = options;
+        }
+    );
+}
+
+export function registerAllComponents() {
+    componentRegistry.forEach(({ renderer, options }, name) => {
+        if (!customElements.get(name)) registerComponent(name, renderer, options);
+    });
+}
+
+export function render(
+    AppComponent,
+    { autoRegister = true, rootNode = document.body } = {},
+) {
+    if (autoRegister) registerAllComponents();
+    const RootComponent = AppComponent();
+    if (isFunction(RootComponent)) RootComponent(rootNode);
+}
+
 const getDefaultBaseComponentOptions = (partial = {}) => ({
   useShadow: true,
   ...partial
@@ -79,19 +113,17 @@ class BaseComponent extends HTMLElement {
       this.effectsCleanupFns = [];
   }
 
-  _getTaggedUuid = (tag) => [
-      name,
-      tag,
-      this.uuid
-    ].filter(Boolean).join('_');
+  _getTaggedUuid = (tag) =>
+    [tag, this.#uuid].filter(Boolean).join('_');
 
   _applyStyles = () => {
-      if (!this.constructor.styles.size) return;
-      const tag = document.createElement('style');
-      tag.type = 'text/css';
-      tag.dataset.styleId = this._getTaggedUuid('style');
-      tag.textContent = [...this.constructor.styles].join('\n\n');
-      this._root.appendChild(tag);
+    if (!this.constructor.styles.size) return;
+    const style = Object.assign(document.createElement('style'), {
+      type: 'text/css',
+      textContent: [...this.constructor.styles].join('\n\n'),
+    });
+    style.dataset.styleId = this._getTaggedUuid('style');
+    this._root.appendChild(style);
   };
 
   _initPropsFromAttributes() {
@@ -118,10 +150,10 @@ class BaseComponent extends HTMLElement {
   };
 
   _scheduleRender = () => {
-      if (this.renderScheduled) return;
-      this.renderScheduled = true;
+      if (this.#renderScheduled) return;
+      this.#renderScheduled = true;
       queueMicrotask(() => {
-          this.renderScheduled = false;
+          this.#renderScheduled = false;
           if (!this.isConnected) return;
           this._render();
       });
@@ -142,38 +174,4 @@ class BaseComponent extends HTMLElement {
 
       popCurrentComponent();
   };
-}
-
-export function registerAllComponents() {
-    componentRegistry.forEach(({ renderer, options }, name) => {
-        if (!customElements.get(name)) registerComponent(name, renderer, options);
-    });
-}
-
-export function registerComponent(
-  name,
-  renderer,
-  options,
-) {
-    if (customElements.get(name)) return;
-    const entry = componentRegistry.get(name);
-    if (!entry)
-        throw new Error(`Component ${name} is not defined in the registry.`);
-
-    customElements.define(
-        name,
-        class extends BaseComponent {
-          static renderer = renderer;
-          static options = options;
-        }
-    );
-}
-
-export function render(
-    AppComponent,
-    { autoRegister = true, rootNode = document.body } = {},
-) {
-    if (autoRegister) registerAllComponents();
-    const RootComponent = AppComponent();
-    if (isFunction(RootComponent)) RootComponent(rootNode);
 }
