@@ -24,6 +24,43 @@ export const safeParse = (val) => {
 export const generateUuid = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
+/**
+ * Simple debounce implementation.
+ * Returns a function that delays invoking `fn` until after `delay` ms
+ * have elapsed since the last call. Supports leading and trailing
+ * invocation options similar to lodash.
+ */
+export const debounce = (
+  fn,
+  delay = 0,
+  { leading = false, trailing = true } = {}
+) => {
+  let timer = null;
+  let lastArgs;
+  let leadingCalled = false;
+
+  const invoke = () => {
+    timer = null;
+    if (trailing && lastArgs) {
+      fn(...lastArgs);
+      lastArgs = undefined;
+    }
+    leadingCalled = false;
+  };
+
+  return (...args) => {
+    lastArgs = args;
+
+    if (leading && !leadingCalled) {
+      leadingCalled = true;
+      fn(...args);
+    }
+
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(invoke, delay);
+  };
+};
+
 /** Maps a PascalCase or CamelCase export name to a kebab-case tag name */
 export const exportNameToTagName = (exportName) => {
   const words = exportName.match(/[A-Z][a-z]*/g);
