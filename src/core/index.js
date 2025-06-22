@@ -1,41 +1,50 @@
+// === core.js ===
+
 export {
-  render,
   component,
-  componentRegistry,
+  render,
   registerComponent,
   registerAllComponents,
+  componentRegistry
 } from './component.js';
 
 export {
-  eventListenersMap,
-  removeAllEventListeners,
-} from './event.js';
+  registerLazyGlob,
+  getLazyLoaderForTag
+} from './lazy.js';
+
+export {
+  html,
+  css
+} from './templating.js';
+
+export {
+  signal,
+  computed,
+  effect,
+  debouncedSignal,
+  withTracking
+} from './reactivity.js';
 
 export {
   onMount,
   onDestroy,
   getCurrentComponent,
-  popCurrentComponent,
   pushCurrentComponent,
+  popCurrentComponent
 } from './lifecycle.js';
 
 export {
-  signal,
-  effect,
-  computed,
-  debouncedSignal,
-} from './reactivity.js';
+  removeAllEventListeners,
+  eventListenersMap
+} from './event.js';
 
 export {
-  html,
-  css,
-} from './templating.js';
-
-export {
-  debounce,
-  safeParse,
   isFunction,
   isSignalLike,
   isGlintComponent,
+  exportNameToTagName,
   generateUuid,
+  safeParse,
+  debounce
 } from './utils.js';
