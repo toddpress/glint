@@ -24,6 +24,22 @@ export function component(
     if (!/^[a-z][a-z0-9]*-[a-z0-9-]+$/.test(name))
         throw new Error(`Invalid custom element name: '${name}'.`);
     componentRegistry.set(name, { renderer, options });
+
+    if (!customElements.get(name)) {
+        class PlaceholderComponent extends BaseComponent {
+            static initialized = false;
+            connectedCallback() {
+                if (!PlaceholderComponent.initialized) {
+                    const entry = componentRegistry.get(name) || {};
+                    PlaceholderComponent.renderer = entry.renderer;
+                    PlaceholderComponent.options = entry.options;
+                    PlaceholderComponent.initialized = true;
+                }
+                super.connectedCallback();
+            }
+        }
+        customElements.define(name, PlaceholderComponent);
+    }
 }
 
 const getDefaultBaseComponentOptions = (partial = {}) => ({
@@ -146,7 +162,7 @@ class BaseComponent extends HTMLElement {
 
 export function registerAllComponents() {
     componentRegistry.forEach(({ renderer, options }, name) => {
-        if (!customElements.get(name)) registerComponent(name, renderer, options);
+        registerComponent(name, renderer, options);
     });
 }
 
@@ -155,7 +171,15 @@ export function registerComponent(
   renderer,
   options,
 ) {
-    if (customElements.get(name)) return;
+    const existing = customElements.get(name);
+    if (existing) {
+        if (existing.prototype instanceof BaseComponent) {
+            existing.renderer = renderer;
+            existing.options = options;
+        }
+        return;
+    }
+
     const entry = componentRegistry.get(name);
     if (!entry)
         throw new Error(`Component ${name} is not defined in the registry.`);
