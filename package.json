@@ -7,6 +7,6 @@
     "start": "python -m http.server 8000 --directory ./"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "author": "Todd Pressley",
+  "license": "MIT"
 }
