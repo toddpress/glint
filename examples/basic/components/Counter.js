@@ -1,7 +1,7 @@
 import {
   css,
   html,
-  component,
+  define,
   onMount,
   onDestroy,
   signal,
@@ -10,7 +10,7 @@ import {
 } from '../../../src/index.js';
 
 
-export const Counter = component('tsp-counter', ({ start = 0 }) => {
+export const Counter = define('tsp-counter', ({ start = 0 }) => {
   const count = signal(Number(start));
   const doubleCount = computed(() => count() * 2);
 

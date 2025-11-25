@@ -1,6 +1,6 @@
 export {
   render,
-  component,
+  define,
 } from './core/component.js';
 export {
   onMount,

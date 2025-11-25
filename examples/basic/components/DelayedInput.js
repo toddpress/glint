@@ -1,13 +1,13 @@
 import {
   html,
   effect,
-  component,
+  define,
   onMount,
   onDestroy,
   debouncedSignal,
 } from '../../../src/index.js';
 
-export const DelayedInput = component('tsp-delayed-input', () => {
+export const DelayedInput = define('tsp-delayed-input', () => {
   const delayedText = debouncedSignal(' ', 1000, {
       leading: false,
       trailing: true,

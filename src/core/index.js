@@ -1,6 +1,6 @@
 export {
   render,
-  component,
+  define,
   componentRegistry,
   registerComponent,
   registerAllComponents,

@@ -16,7 +16,7 @@ import {
 
 export const componentRegistry = new Map();
 
-export function component(
+export function define(
   name,
   renderer,
   options,
