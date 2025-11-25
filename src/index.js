@@ -15,6 +15,9 @@ export {
 export {
   html,
   css,
+  each,
+  when,
+  match,
 } from './core/templating.js';
 export {
   isGlintComponent,

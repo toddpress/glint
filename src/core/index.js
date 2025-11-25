@@ -29,6 +29,9 @@ export {
 export {
   html,
   css,
+  each,
+  when,
+  match,
 } from './templating.js';
 
 export {

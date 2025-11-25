@@ -5,6 +5,15 @@ import { isSignalLike } from './utils.js'
 
 const templateCache = new WeakMap();
 
+export const each = (items, fn) =>
+  items == null ? [] : items.map(fn);
+
+export const when = (condition, fn) =>
+  condition ? fn() : '';
+
+export const match = (value, cases) =>
+  cases[value] ? cases[value]() : cases.default?.()
+
 export function css(strings, ...values) {
   const compiled = strings.reduce((acc, s, i) => acc + s + (values[i] || ''), '');
   const componentClass = getCurrentComponent()?.constructor;
