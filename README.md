@@ -55,9 +55,9 @@ npm install glint-js
 ### 2️⃣ Define a custom component
 
 ```js
-import { component, signal, html } from 'glint-js';
+import { define, signal, html } from 'glint-js';
 
-component('counter-button', ({ start = 0 }) => {
+define('counter-button', ({ start = 0 }) => {
     const count = signal(Number(start));
 
     return html`
@@ -125,7 +125,7 @@ Boom! 💥 Your component just works—no build step, no config, no bullshit.
 Define components using signals—no hooks needed.
 
 ```js
-component('my-counter', () => {
+define('my-counter', () => {
     const count = signal(0);
     return html`
         <button @click=${() => count(count() + 1)}>Count: ${count}</button>
@@ -136,7 +136,7 @@ component('my-counter', () => {
 ### 🔗 Real Scoped Styles
 
 ```js
-component('styled-box', () => {
+define('styled-box', () => {
     css`
         div {
             background: purple;
@@ -151,7 +151,7 @@ component('styled-box', () => {
 <!--
 NEWER SYNTAX:
 ```js
-component("styled-box", () => html`
+define("styled-box", () => html`
   <style>
     div { background: purple; padding: 1em; color: white; }
   </style>
@@ -164,7 +164,7 @@ component("styled-box", () => html`
 Glint ships with an escape hatch to web components' scoped-by-default styles:
 
 ```js
-component("styled-box-w-esc-hatch", () => html`
+define("styled-box-w-esc-hatch", () => html`
   <style global>
     div { background: purple; padding: 1em; color: white; }
   </style>
@@ -182,7 +182,7 @@ const doubleCount = computed(() => count() * 2);
 ### 🎭 Slots & Composition
 
 ```js
-component(
+define(
     'custom-card',
     () => html`
         <style>
@@ -233,12 +233,12 @@ Uses native event listeners, unlike React’s synthetic event system.
 
 ## 🛠️ API Reference
 
-### `component(name, rendererFn)`
+### `define(name, rendererFn)`
 
 Registers a Web Component.
 
 ```js
-component('hello-world', () => html`<h1>Hello, World!</h1>`);
+define('hello-world', () => html`<h1>Hello, World!</h1>`);
 ```
 
 #### `signal(initialValue)`
@@ -304,7 +304,7 @@ Then, in your components:
 
 ```js
 // NOTE: UNIMPLEMENTED
-import { component, signal, html } from 'glint-js';
+import { define, signal, html } from 'glint-js';
 ```
 
 ## 🤝 Contributing
