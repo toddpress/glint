@@ -82,7 +82,7 @@ class BaseComponent extends HTMLElement {
   _getTaggedUuid = (tag) => [
       name,
       tag,
-      this.uuid
+      this.#uuid
     ].filter(Boolean).join('_');
 
   _applyStyles = () => {
@@ -118,10 +118,10 @@ class BaseComponent extends HTMLElement {
   };
 
   _scheduleRender = () => {
-      if (this.renderScheduled) return;
-      this.renderScheduled = true;
+      if (this.#renderScheduled) return;
+      this.#renderScheduled = true;
       queueMicrotask(() => {
-          this.renderScheduled = false;
+          this.#renderScheduled = false;
           if (!this.isConnected) return;
           this._render();
       });
