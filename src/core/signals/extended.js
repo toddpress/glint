@@ -1,6 +1,6 @@
 import { Signal } from './adapter.js';
 import { wrap } from './core.js';
-import { debounce } from '../utils/debounce.js';
+import { debounce, safeParse } from '../utils.js';
 
 /**
  * Glint Signals — Extended Signal Types
@@ -115,7 +115,6 @@ export function mapSignal(source, fn) {
 }
 
 /* Persistent/localStorage-backed signal */
-// TODO: use safe parse from utils?
 export function persistentSignal(key, defaultValue) {
   let stored;
   try {
@@ -124,16 +123,7 @@ export function persistentSignal(key, defaultValue) {
     stored = null;
   }
 
-  const initial =
-    stored != null
-      ? (() => {
-          try {
-            return JSON.parse(stored);
-          } catch {
-            return stored;
-          }
-        })()
-      : defaultValue;
+  const initial = stored != null ? safeParse(stored) : defaultValue;
 
   const base = new Signal.State(initial);
 

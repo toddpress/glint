@@ -13,3 +13,14 @@ export function onDestroy(cb) {
   const comp = getCurrentComponent();
   if (comp) comp.hooks.onDestroy.push(cb);
 }
+
+export const runAll = (fns) => fns.forEach(fn => fn());
+
+export function createLifecycle() {
+  return {
+    onMount: [],
+    onDestroy: [],
+    mount: () => runAll(this.onMount),
+    destroy: () => runAll(this.onDestroy),
+  };
+}

@@ -80,7 +80,6 @@ class BaseComponent extends HTMLElement {
   }
 
   _getTaggedUuid = (tag) => [
-      name,
       tag,
       this.#uuid
     ].filter(Boolean).join('_');
