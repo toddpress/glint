@@ -1,6 +1,9 @@
 import { Signal } from './adapter.js';
 import { wrap } from './core.js';
 
+import { getCurrentComponent } from '../lifecycle.js';
+import { isFunction } from '../utils.js';
+
 /**
  * Glint Signals — Public Reactivity API
  * --------------------------------------
@@ -36,5 +39,16 @@ export function computed(fn) {
 }
 
 export function effect(fn) {
-  return Signal.effect(fn);
+  const comp = getCurrentComponent();
+  // If NOT IN a component render, use a free-floating effect
+  if (!comp) return Signal.effect(fn);
+
+  const stop = Signal.effect(() => {
+    const cleanup = fn();
+    if (isFunction(cleanup)) {
+      comp.effectsCleanupFns.push(cleanup);
+    }
+  });
+
+  comp.effectsCleanupFns.push(stop);
 }
