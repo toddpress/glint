@@ -50,7 +50,7 @@ class BaseComponent extends HTMLElement {
       } = getDefaultBaseComponentOptions(this.constructor.options);
 
       this.effectsCleanupFns = [];
-      this.dataset.id = this._getTaggedUuid();
+      this.dataset.id = this.#getTaggedUuid();
 
       this._root = useShadow
         ? this.attachShadow({ mode: 'open' })
@@ -79,7 +79,8 @@ class BaseComponent extends HTMLElement {
       this.effectsCleanupFns = [];
   }
 
-  _getTaggedUuid = (tag) => [
+  #getTaggedUuid = (tag) => [
+      name,
       tag,
       this.#uuid
     ].filter(Boolean).join('_');
@@ -88,7 +89,7 @@ class BaseComponent extends HTMLElement {
       if (!this.constructor.styles.size) return;
       const tag = document.createElement('style');
       tag.type = 'text/css';
-      tag.dataset.styleId = this._getTaggedUuid('style');
+      tag.dataset.styleId = this.#getTaggedUuid('style');
       tag.textContent = [...this.constructor.styles].join('\n\n');
       this._root.appendChild(tag);
   };
