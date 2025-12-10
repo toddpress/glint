@@ -125,11 +125,6 @@ const isPrimitive = (v) =>
 const isTemplate = (t) => t?.__template === true;
 const isFragment = (f) => f?.__fragment === true;
 
-const createFragment = (children) => ({
-  __fragment: true,
-  children,
-});
-
 // Auto-unwrap signals/computed anywhere we deliberately read a value
 function unwrapOne(v) {
   if (isSignal(v) || isComputed(v)) return v();
@@ -165,7 +160,7 @@ const templateCache = new WeakMap();
  * During instantiation:
  *   - Text markers are split into text + comment anchors (NodePart).
  *   - Attribute markers are parsed into AttrPart or InterpolatedAttrPart.
-//  */
+ */
 function compileTemplate(strings, valueCount) {
   let htmlString = '';
 
