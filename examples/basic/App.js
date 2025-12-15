@@ -1,9 +1,9 @@
 import { html } from '../../src/core/index.js';
 
-import * as all from './components/index.js';
+import * as all from './components';
 //? NOTE: `import * as all` is just a shorter way to import all named exports
-//? -> from a module. it is used in the render function below. This is necessary
-//? -> for the component function to register its renderer with the Glint componentRegistry.
+//? -> from a module. This is necessary for the component function to register its
+//? -> renderer with the Glint componentRegistry.
 
 export const App = () => html`
     <section>
@@ -22,7 +22,7 @@ export const App = () => html`
     </section>
     <section>
         <h3>Debounced Signal (1 second):</h3>
-        <tsp-delayed-input />
+        <tsp-task-board />
     </section>
 `;
 
