@@ -1,12 +1,43 @@
 {
-  "name": "glint",
-  "description": "A lightweight custom element framework with signals, computed values and more.",
-  "version": "0.0.1",
+  "name": "@toddpress/glint",
+  "version": "0.1.0",
+  "description": "A tiny, signal-powered framework for building Web Components that doesn’t hate you back.",
   "type": "module",
+  "main": "./src/index.js",
   "scripts": {
-    "start": "python -m http.server 8000 --directory ./"
+    "start": "python -m http.server 8000 --directory ./",
+    "build:codepen": "rollup -c",
+    "watch:codepen": "rollup -c -w ./src"
   },
-  "keywords": [],
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@preact/signals-core": "^1.12.1"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "web-components",
+    "signals",
+    "reactive",
+    "framework",
+    "glint"
+  ],
   "author": "Todd Pressley",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toddpress/glint"
+  },
+  "bugs": {
+    "url": "https://github.com/toddpress/glint/issues"
+  },
+  "homepage": "https://glintjs.vercel.app/",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "rollup": "^4.53.3"
+  }
 }
