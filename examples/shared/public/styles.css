@@ -1,0 +1,40 @@
+html, body {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+body {
+  font-family: sans-serif;
+  font-size: 12px;
+  padding: 0.4rem 0.8rem;
+}
+
+header {
+  max-width: 760px;
+
+  h1 {
+    font-size: 16px;
+  }
+}
+
+.spinning {
+  display: inline-block;
+  animation: spinAndScale 2.5s ease-in-out infinite;
+}
+
+@keyframes spinAndScale {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(5) rotate(180deg);
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+  }
+}

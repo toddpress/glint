@@ -1,6 +1,6 @@
 # Glint Trademarks
 
-The name **Glint** or **Glintjs**, the Glint logo, and any related branding or design marks
+The name **Glint**, the Glint logo, and any related branding or design marks
 (the “Marks”) are trademarks of **Todd Pressley**.
 
 ## Acceptable use

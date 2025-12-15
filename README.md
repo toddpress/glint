@@ -1,224 +1,331 @@
-# ⚡ `glintjs` (Glint)
+# Glint ✨
 
-*A tiny, signal-powered framework for building Web Components that doesn’t hate you back.*
+## 🔥 The no-bullshit, bullshit web component framework 🔥
 
-`glintjs` is a tiny, reactive framework for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with **no build step**, **no virtual DOM**, and **no ceremony**.
+🚀 Glint is a fast, build-less native web component-based UI framework that makes reactive web development simple and fun again — All without the virtual DOM, complex hooks, or build tools.
 
-No JSX. <br>
-No virtual DOM. <br>
-No compiler. <br>
-No bullshit.
+-   ✅ No Babel, No JSX, No Webpack
+-   ✅ Native Web Components & Scoped Styles by Default
+-   ✅ Fine-Grained Reactivity Without Re-Renders
+-   ✅ Auto-Batching, No useEffect Hell
+-   ✅ Built-in State Management, No Context API Needed
 
-Just components that feel obvious to write and easy to reason about.
+> 💡 Think React, but simpler, faster, and without the bloat.
 
----
+## Motivation
 
-## Why Glint?
+**We need a low-barrier, low-bullshit way of creating and consuming _real_ web components**. The DX for native web components kinda sucks... That's why I started work on this.
 
-**Web Components are powerful — but the DX is, let's say... absolute dogshit.**
+And please -- steal this idea and make something better... Or contribute.
 
-Glint exists to answer a simple question:
+## ⚠️ Disclaimer
 
-> *What if Web Components had React-level ergonomics without React-level complexity?*
+> Glint is still very much a **work in progress**: Features, APIs, and documentation may be assumed **incomplete and are subject to change**.
 
-### Glint is:
-- ⚡ **Signal-driven** (fine-grained updates, no re-render storms)
-- 🧠 **Declarative** (templates read like HTML, not DSL soup)
-- 🪶 **Tiny** (one small runtime, no build tools required)
-- 🧩 **Composable** (helpers, fragments, and components all compose naturally)
-- 🌐 **Native** (real DOM, real Custom Elements, real HTML)
+👉 **Use something like `lit-element` or `React`/`Preact` if you require production-grade component abstractions.**
 
----
+While we’re actively developing and iterating, please **expect breaking changes** or inconsistencies between the code and the docs.
 
-## A Taste
+In essence... Proceed with <b>EXTREME</b> caution if you need production stability! Glint is conceptually awesome (if I say so myself), but it's not yet ready for prime time -- just remember to check back soon! And please contribute 🙏
 
-```js
-import { define, html } from 'glintjs';
+## 🚀 Quick Start
 
-define('my-counter', ({ state }) => {
-  const count = state.signal(0);
-  const doubled = state.computed(() => count() * 2);
+Glint runs directly in the browser—no setup required. [Check it out on codepen](https://codepen.io/toddpress/pen/ogNVvoL?editors=0010)!
 
-  return html`
-    <button onclick=${() => count(count() + 1)}>
-      Count: ${count} (x2 = ${doubled})
-    </button>
-  `;
-});
-```
+### 1️⃣ [WIP] NPM Install
 
-That’s it.
-
-No hooks.
-No lifecycle gymnastics.
-No re-render loops.
-
-When `count` changes, **only the text nodes that depend on it update**.
-
----
-
-## Core Concepts
-
-### Components
-
-Component definitions are just function invocations with a name and a render function that returns a template:
-
-```js
-define('my-element', (ctx) => {
-  return html`<p>Hello, world</p>`;
-});
-```
-
-They’re backed by real Custom Elements, not abstractions pretending to be the DOM.
-
----
-
-### Templates (`html`)
-
-Glint uses **real tagged template literals**:
-
-```js
-html`
-  <div class="card">
-    <h2>${title}</h2>
-    <p>${description}</p>
-  </div>
-`
-```
-
-Expressions can be:
-- signals
-- computed values
-- functions
-- arrays
-- nested templates
-
-Glint handles the rest.
-
----
-
-### Signals & State
-
-Inside components, you get a scoped state API:
-
-```js
-const count = ctx.state.signal(0);
-const doubled = ctx.state.computed(() => count() * 2);
-```
-
-Signals are functions:
-- call with no args → get
-- call with a value → set
-
-```js
-count();      // get
-count(10);    // set
-```
-
-No proxies or magic getters.
-
----
-
-### Control Flow Helpers
-
-Glint provides minimal, composable helpers for common template patterns.
-
-#### `each()`
-
-```js
-${each(items, (item) => html`
-  <li>${item}</li>
-`)}
-```
-
-#### `when()`
-
-```js
-${when(isLoading, () => html`
-  <p>Loading…</p>
-`)}
-```
-
-#### `match()`
-
-```js
-${match(status, {
-  success: () => html`<p>Success</p>`,
-  error: () => html`<p>Error</p>`,
-  default: () => html`<p>Idle</p>`
-})}
-```
-
-They’re just functions that return fragments — nothing special, nothing hidden.
-
----
-
-## Rendering an App
-
-Here’s your entry point:
-
-```js
-import { createRoot, render, html } from 'glintjs';
-
-const App = () => html`
-  <h1>Hello from Glint</h1>
-  <my-counter></my-counter>
-`;
-
-createRoot('#glint-app').render(App);
-```
-
-And in your HTML:
+For now, you can clone the repo and use the `src/index.js` file in your project.
 
 ```html
-<body>
-  <div id="glint-app"></div>
-</body>
+<script type="module" src="path/to/src/index.js"></script>
 ```
 
----
+#### [WIP] Via `npm`:
 
-## Philosophy
+```sh
+npm install glint-js
+```
 
-Glint is built on a few strong beliefs:
+#### [WIP] or just use CDN:
 
-- **Clarity beats cleverness**
-- **Signals should be explicit**
-- **The Platform is not the enemy**
-- **APIs should feel frictionless**
-- **Abstractions must earn their keep**
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
+```
 
-Or, more succinctly, Glint is:
+### 2️⃣ Define a custom component
 
-> *The no-bullshit, bullshit web component framework.*
+```js
+import { define, signal, html } from 'glint-js';
 
-<sub><em>(affectionate, not hostile)</em></sub>
+define('counter-button', ({ start = 0 }) => {
+    const count = signal(Number(start));
 
----
+    return html`
+        <button @click=${() => count(count() + 1)}>
+            Clicked ${count} times
+        </button>
+    `;
+});
+```
 
-## What Glint Is *Not*
+### 3️⃣ Use it in other components
 
-Glint is NOT:
-- a React clone
-- a virtual DOM framework
-- a Svelte wannabe
-- a compiler
-- a full application platform
+```html
+<counter-button start="5"></counter-button>
+```
 
-Glint is a **toolkit for authoring components cleanly** — and then getting the hell out of the way.
+### 4️⃣ Bootstrap your app, add entrypoint
 
----
+```js
+// top-level app component
+const _App_ = () => html`
+    <main>
+        <counter-button start="5" />
+    </main>
+`;
 
-## Status
+// bootstrap app in entry point
+render(_App_, {
+    autoRegister: true,
+    rootNode: document.querySelector('#glint-app'),
+});
+```
 
-⚠️ Glint is currently:
-- 🧪 Actively developed
-- ✅ Stable for experimentation
-- ⚠️ Not stable for production deployment
+Boom! 💥 Your component just works—no build step, no config, no bullshit.
 
-That said — the core architecture is solid, minimal, and intentionally hard to over-engineer.
+## 🎯 Why Glint?
 
----
+🔥 Glint aims for a DX similar to React without the headache.
 
-## MIT License
-<small>Do whatever you want. Just don’t make it worse 😉</small>
+-   ✅ No VDOM Overhead → Faster, direct DOM updates.
+-   ✅ Zero Build Step → Works without Babel/Webpack/Vite.
+-   ✅ Signals & Computed State → No useEffect boilerplate.
+-   ✅ Scoped Styles for Free → Just like native components. There's even an escape hatch.
+-   ✅ Event Binding Like HTML → Just use @click=${fn}.
+-   ✅ Native Web Standards → No lock-in, just HTML, JS, and CSS.
+
+## 🔍 React vs. Glint
+
+| Feature            | React                           | Glint                                      |
+| ------------------ | ------------------------------- | ------------------------------------------ |
+| **Build Tools**    | Required (Babel, Webpack)       | 🚀 **None** (Runs in browser)              |
+| **Reactivity**     | Hooks (`useState`, `useEffect`) | 🚀 **Signals & Computed State**            |
+| **Event Handling** | Synthetic Events                | 🚀 **Native DOM Events** (`@click=${fn}`)  |
+| **Context API**    | Required for state sharing      | 🚀 **Global `store()`** (No Prop Drilling) |
+| **Performance**    | VDOM Reconciliation             | 🚀 **Direct DOM Updates**                  |
+
+<!--
+| **Scoped Styles**  | CSS-in-JS, Emotion | 🚀 **Built-in Shadow DOM** |
+-->
+
+## 📖 Features
+
+### 🛠️ Simple, Reactive Components
+
+Define components using signals—no hooks needed.
+
+```js
+define('my-counter', () => {
+    const count = signal(0);
+    return html`
+        <button @click=${() => count(count() + 1)}>Count: ${count}</button>
+    `;
+});
+```
+
+### 🔗 Real Scoped Styles
+
+```js
+define('styled-box', () => {
+    css`
+        div {
+            background: purple;
+            padding: 1em;
+            color: white;
+        }
+    `;
+    return html`<div>Styled Box</div>`;
+});
+```
+
+<!--
+NEWER SYNTAX:
+```js
+define("styled-box", () => html`
+  <style>
+    div { background: purple; padding: 1em; color: white; }
+  </style>
+  <div>Styled Box</div>
+`);
+```
+-->
+
+<!--
+Glint ships with an escape hatch to web components' scoped-by-default styles:
+
+```js
+define("styled-box-w-esc-hatch", () => html`
+  <style global>
+    div { background: purple; padding: 1em; color: white; }
+  </style>
+  <div>Styled Box</div>
+`);
+```
+-->
+
+### ⚡ Computed State (No useMemo)
+
+```js
+const doubleCount = computed(() => count() * 2);
+```
+
+### 🎭 Slots & Composition
+
+```js
+define(
+    'custom-card',
+    () => html`
+        <style>
+            .card {
+                border: 1px solid #ccc;
+                padding: 1em;
+            }
+        </style>
+        <div class="card">
+            <slot name="header"></slot>
+            <slot></slot>
+        </div>
+    `,
+);
+```
+
+```html
+<custom-card>
+    <h3 slot="header">Title</h3>
+    <p>Content here</p>
+</custom-card>
+```
+
+### 🌍 [WIP] Global State Without Context API
+
+```js
+const theme = store('dark');
+theme('light'); // Updates all subscribers
+```
+
+### 🚀 Event Delegation, No Re-Renders
+
+```js
+<button @click=${handleClick}>Click Me</button>
+```
+
+Uses native event listeners, unlike React’s synthetic event system.
+
+## 🎬 Live Demo
+
+  <p><b><a href="https://codepen.io/toddpress/pen/ogNVvoL?editors=0010">DEMO</a></b> on Codepen</p>
+
+> 💡 Fun fact: Glint was developed entirely on Codepen... Thanks, Chris Coyer! (:
+
+🚀 Check out the interactive playground:
+
+-   👉 Glint Sandbox (Coming soon!)
+
+## 🛠️ API Reference
+
+### `define(name, rendererFn)`
+
+Registers a Web Component.
+
+```js
+define('hello-world', () => html`<h1>Hello, World!</h1>`);
+```
+
+#### `signal(initialValue)`
+
+Creates reactive state.
+
+```js
+const count = signal(0);
+count(count() + 1);
+
+console.log(count());
+//> 1
+```
+
+#### `computed(fn)`
+
+Creates a derived state variable.
+
+```js
+const double = computed(() => count() * 2);
+```
+
+#### `html` Tagged Template
+
+Tagged template for templating.
+
+```js
+return html`<button>${count}</button>`;
+```
+
+#### [WIP] `store(initialValue)`
+
+Global state management.
+
+```js
+// NOTE: UNIMPLEMENTED
+const user = store({ name: 'Alice' });
+```
+
+## 💻 Installation & Usage
+
+### 0️⃣ Clone the repo
+
+```sh
+  git clone https://github.com/toddpress/glint.git
+```
+
+#### 1️⃣ [WIP] Using CDN
+
+```html
+<!-- NOTE: UNIMPLEMENTED -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/glint-js"></script>
+```
+
+#### 2️⃣ [WIP] Install with NPM
+
+```sh
+# NOTE: UNIMPLEMENTED!
+npm install glint-js
+```
+
+Then, in your components:
+
+```js
+// NOTE: UNIMPLEMENTED
+import { define, signal, html } from 'glint-js';
+```
+
+## 🤝 Contributing
+
+🚀 Want to help shape Glint? Open an issue or submit a PR!
+
+-   👉 GitHub Issues (Coming soon!)
+
+## 📜 License
+
+MIT License – Use it freely!
+
+## 🎯 TL;DR
+
+-   🚀 No JSX, No build step, Just Web Components.
+-   ⚡ No VDOM, only updates what changes.
+-   🎨 Scoped styles for free, no extra tooling.
+-   🔗 Works anywhere: Use inside React, Vue, Svelte, or vanilla JS.
+
+<br />
+<br />
+<br />
+
+### ✨ Glint – The lightweight UI framework we've been waiting for... that we're waiting for 😉
