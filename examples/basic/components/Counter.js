@@ -1,28 +1,53 @@
-import { define, html } from '../../../src';
+import {
+  css,
+  html,
+  define,
+  onMount,
+  onDestroy,
+  signal,
+  computed,
+  effect
+} from '../../../src/index.js';
 
-export const Counter = define('tsp-counter', (ctx) => {
-  // const { props, state, emit, onMount, onDestroy, effect } = ctx;
-  const { state, props } = ctx;
 
-  const start = Number(props.start ?? 0);
-  const count = state.signal(start);
-  const doubled = state.computed(() => count() * 2);
+export const Counter = define('tsp-counter', ({ start = 0 }) => {
+  const count = signal(Number(start));
+  const doubleCount = computed(() => count() * 2);
 
-  function inc() {
+  function incrementCount() {
     count(count() + 1);
   }
 
-  function dec() {
-    count(count() - 1);
-  }
+  onMount(() => {
+    console.log('[Counter] - component mounted');
+  });
+
+  onDestroy(() => {
+    console.log('[Counter] - component unmounted');
+  });
+
+  effect(() => {
+    console.log('[Counter] - count changed:', count());
+
+    return () => {
+      console.log('[Counter] - cleanup running');
+    };
+  });
+
+  css`
+    button {
+      background-color: #08c;
+      color: #fff;
+      border: none;
+      padding: 0.4rem 0.8rem;
+    }
+  `;
 
   return html`
-    <div style="display:inline-flex;gap:.5rem;align-items:center;">
-      <button onclick=${dec}>-</button>
-      <span>Count: ${count} (x2 = ${doubled})</span>
-      <button onclick=${inc}>+</button>
-    </div>
+    <button @click=${incrementCount}>Count: ${count}</button>
+    <p>Double: ${doubleCount}</p>
   `;
 });
+
 
 export default Counter;
