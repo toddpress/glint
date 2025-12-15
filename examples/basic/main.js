@@ -1,12 +1,9 @@
 import {
   render
-} from '../../src/index.js'
+} from '../../src'
 
 // Import the App component
-import { App as _App_ } from './App.js'
+import { App } from './App'
 
 // Bootstrap the app and render the App component
-render(_App_, {
-  autoRegister: true,
-  rootNode: document.getElementById('glint-app')
-})
+createRoot('#glint-app', { autoRegister: true }).render(App)

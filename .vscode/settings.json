@@ -1,0 +1,8 @@
+{
+  "lit-html.tags": [
+    "html",
+    "raw",
+    "css",
+    "svg"
+  ]
+}
