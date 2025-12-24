@@ -1,9 +1,9 @@
 import { html } from '../../src';
 
-import * as all from './components';
-//? NOTE: `import * as all` is just a shorter way to import all named exports
-//? -> from a module. This is necessary for the component function to register its
-//? -> renderer with the Glint componentRegistry.
+// In glint, component registrations ARE side-effects... So, while this may look odd,
+//   it's technically correct (i think).
+import './components/Counter.js';
+import './components/TaskBoard.js';
 
 export const App = () => html`
     <section>

@@ -1,6 +1,6 @@
 import { define, html, each, when, match } from '../../../src';
 
-export const TaskBoard = define('tsp-task-board', (ctx) => {
+define('tsp-task-board', (ctx) => {
   const { props, state, emit, onMount, onDestroy, effect } = ctx;
 
   const { nameFilter } = state({
@@ -159,5 +159,3 @@ export const TaskBoard = define('tsp-task-board', (ctx) => {
     </div>
   `;
 });
-
-export default TaskBoard;

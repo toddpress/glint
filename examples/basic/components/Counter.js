@@ -1,6 +1,6 @@
 import { define, html } from '../../../src';
 
-export const Counter = define('tsp-counter', (ctx) => {
+define('tsp-counter', (ctx) => {
   // const { props, state, emit, onMount, onDestroy, effect } = ctx;
   const { state, props } = ctx;
 
@@ -24,5 +24,3 @@ export const Counter = define('tsp-counter', (ctx) => {
     </div>
   `;
 });
-
-export default Counter;

@@ -3,7 +3,7 @@
     //  Glint – CodePen Dev Bundle
     //  https://github.com/toddpress/glint
     // ============================================================
-    
+
 const isFunction = (val) => typeof val === 'function';
 const isString = (val) => typeof val === 'string';
 const isNumber = (val) => typeof val === 'number';
@@ -80,11 +80,11 @@ var i=Symbol.for("preact-signals");function t(){if(!(s>1)){var i,t=false;while(v
 // This isolates the external dependency and allows us to later
 // swap in TC39 Signals, Solid Signals, or a homegrown variant
 // without modifying the rest of Glint’s architecture.
-//
 
 // ------------------------------------------------------------
 // State — thin wrapper around Preact's basic signal()
 // ------------------------------------------------------------
+
 class State {
   constructor(initial) {
     this._s = d(initial);
@@ -143,7 +143,7 @@ const subtle = {
 // ------------------------------------------------------------
 // Unified Signal API — exported as a single namespace
 // ------------------------------------------------------------
-const Signal = {
+const Signal$1 = {
   State,
   Computed,
   subtle,
@@ -461,7 +461,7 @@ const getCompiled = (strings, valueCount) => {
 // renderTemplate
 // ------------------------------------------------------------
 
-const renderTemplate = (tpl, ctxEffect) => {
+const renderTemplate$1 = (tpl, ctxEffect) => {
   if (!isTemplate(tpl)) {
     throw new Error('renderTemplate expected a template.');
   }
@@ -595,11 +595,6 @@ const renderTemplate = (tpl, ctxEffect) => {
   return fragment;
 };
 
-// ============================================================
-// Glint Component System
-// ============================================================
-
-
 // ------------------------------------------------------------
 // BaseComponent
 // ------------------------------------------------------------
@@ -631,7 +626,7 @@ class BaseComponent extends HTMLElement {
       props: this.props,
       state: this.state,
       effect: (fn) => {
-        const stop = Signal.effect(() => {
+        const stop = Signal$1.effect(() => {
           const cleanup = fn();
           if (typeof cleanup === 'function') {
             this.effectsCleanupFns.push(cleanup);
@@ -680,16 +675,12 @@ class BaseComponent extends HTMLElement {
     if (!renderer) return;
 
     const tpl = renderer(this.ctx);
-    const dom = renderTemplate(tpl, (fn) => this.ctx.effect(fn));
+    const dom = renderTemplate$1(tpl, (fn) => this.ctx.effect(fn));
 
     this.#root.innerHTML = '';
     this.#root.appendChild(dom);
   }
 }
-
-// ------------------------------------------------------------
-// Component registry + helpers
-// ------------------------------------------------------------
 
 const componentRegistry = new Map();
 
@@ -738,6 +729,34 @@ const render = (
   rootNode.appendChild(dom);
 };
 
+// ------------------------------------------------------------
+// `createRoot` function -- like React but lighter
+// ------------------------------------------------------------
+
+function createRoot(target, options = {}) {
+  const rootNode =
+    typeof target === 'string'
+      ? document.querySelector(target)
+      : target;
+
+  if (!rootNode) {
+    throw new Error('Glint: root node is required');
+  }
+
+  return {
+    render(App) {
+      return render(App, {
+        ...options,
+        rootNode,
+      });
+    },
+
+    unmount() {
+      rootNode.replaceChildren();
+    },
+  };
+}
+
 // ============================================================
 // Glint Template Helpers (HOF-based)
 // ------------------------------------------------------------
@@ -773,4 +792,4 @@ const match = (source, cases) =>
     val in cases ? cases[val]() : cases.default?.() ?? []
   );
 
-export { define, each, html, match, render, when };
+export { createRoot, define, each, html, match, render, when };
