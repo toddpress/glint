@@ -245,7 +245,7 @@ Or more simply:
 
 > *Glint prefers being understandable to being impressive.*
 
-You can use it — or just read it.
+You can use it — or just read it... Or don't! 😉
 
 ---
 
@@ -278,5 +278,5 @@ The smallness is intentional.
 ## License
 
 MIT  
-<small>Do whatever you want. Just don’t pretend it’s something it isn’t😉
+<small>Do whatever you want. Just don’t pretend it’s something it isn’t.
 </small>
