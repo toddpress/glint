@@ -168,8 +168,10 @@ It’s a **reference implementation of a way of thinking about UI** — usable a
 
 ⚠️ Experimental.
 
-Glint is stable enough to explore and reason with,  
-but not yet recommended for production use.
+Glint is stable enough to explore and reason with, but not yet recommended for production use yet:
+- Breaking API changes _could_ happen as glint is an evolving experiment
+- continuation of first point: README docs may be out of sync with some branches' APIs 
+
 
 The smallness is intentional.
 
@@ -178,4 +180,5 @@ The smallness is intentional.
 ## License
 
 MIT  
-<small>Do whatever you want. Just don’t pretend it’s something it isn’t.</small>
+<small>Do whatever you want. Just don’t pretend it’s something it isn’t😉
+</small>
