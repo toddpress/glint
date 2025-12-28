@@ -120,16 +120,114 @@ Just composition.
 
 ## Rendering
 
-Glint doesn’t prescribe application structure.
+Glint does not have a “root component” or a render loop.
+
+It does not run your application.
+It does not re-invoke render functions.
+It does not own your lifecycle.
+
+**`render` places DOM into the world — once — and steps aside.**
+
+---
+
+### `render(target, template)`
 
 ```js
 import { render, html } from 'glintjs';
 
+render('#app', html`
+  <h1>Hello</h1>
+  <my-counter></my-counter>
+`);
+```
+
+- `target` is a DOM node or selector
+- `template` is a Glint template
+
+That’s it.
+
+After this call:
+- the DOM exists
+- Custom Elements instantiate naturally
+- signals wire themselves to the nodes that depend on them
+- updates happen locally and automatically
+
+There is no global render cycle.
+
+---
+
+### Why `render` does not accept a function
+
+Earlier versions allowed this pattern:
+
+```js
 render('#app', () => html`
   <h1>Hello</h1>
   <my-counter></my-counter>
 `);
 ```
+
+This has been deprecated.
+
+Passing a function implies:
+- a render phase
+- a re-invocable root
+- framework ownership of application flow
+
+Glint does not work that way.
+
+There is no top-level re-render.
+There is no special “root” execution context.
+There is no framework-managed lifecycle.
+
+Accepting a function would suggest behavior that does not exist.
+
+---
+
+### The mental model
+
+Think of `render` as **placement**, not execution.
+
+You are saying:
+
+> “Put this DOM here.”
+
+Not:
+
+> “Run my app.”
+
+Once placed:
+- the browser manages element lifecycles
+- signals manage change
+- identity lives where it belongs: in the DOM
+
+Glint stays out of the way.
+
+---
+
+### Rendering is optional
+
+You don’t need `render` at all if you don’t want it.
+
+Because Glint is built on native Web Components, you can also:
+
+- author components
+- import them
+- use them directly in HTML
+
+`render` exists purely as a convenience — not as a governing abstraction.
+
+---
+
+### Summary
+
+- `render` runs once
+- it places a template into a container
+- it does not imply re-rendering
+- it does not define application structure
+- it does not own lifecycle or flow
+
+Glint enables applications without prescribing them.
 
 ---
 
