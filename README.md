@@ -157,7 +157,7 @@ Glint is not:
 - a React alternative (in the best of ways)
 - a virtual DOM framework
 - a compiler
-- a full application platform
+- an application governor; it's a UI substrate.
 - an attempt to “win” the ecosystem
 
 It’s a **reference implementation of a way of thinking about UI** — usable as a runtime, valuable as a lens.
