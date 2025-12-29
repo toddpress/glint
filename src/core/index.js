@@ -22,4 +22,4 @@
 
 export { html } from './template';
 export { define } from './component';
-export { mount as render } from './root';
+export { mount as render } from './mount';
