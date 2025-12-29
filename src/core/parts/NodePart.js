@@ -5,7 +5,7 @@ import {
   isPrimitive,
 } from '../utils.js';
 
-import { unwrapOne } from '../signals';
+import { unwrapOne } from '../../signals/index.js';
 
 export class NodePart {
   constructor(marker, ctxEffect) {

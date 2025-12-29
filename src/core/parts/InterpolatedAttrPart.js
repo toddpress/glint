@@ -1,5 +1,5 @@
 import { isString } from '../utils';
-import { unwrapOne } from '../signals';
+import { unwrapOne } from '../../signals';
 
 export class InterpolatedAttrPart {
   constructor(el, attrName, segments, ctxEffect) {

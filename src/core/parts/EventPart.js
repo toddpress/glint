@@ -1,5 +1,5 @@
 import { isFunction, isSignal } from '../utils';
-import { unwrapOne } from '../signals';
+import { unwrapOne } from '../../signals';
 
 export class EventPart {
   constructor(el, eventName, ctxEffect) {

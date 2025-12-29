@@ -1,9 +1,8 @@
 import {
-  createRoot,
+  render,
 } from '../../src'
 
 // Import the App component
 import { App } from './App'
 
-// Bootstrap the app and render the App component
-createRoot('#glint-app', { autoRegister: true }).render(App)
+render(App, '#glint-app')

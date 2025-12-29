@@ -1,6 +1,6 @@
-import { createStateAPI, Signal } from './signals';
-import { renderTemplate } from './template.js';
-import { safeParse } from './utils.js';
+import { createStateAPI, Signal } from '../signals';
+import { renderTemplate } from './template';
+import { safeParse } from './utils';
 
 // ------------------------------------------------------------
 // BaseComponent
@@ -97,10 +97,16 @@ export const define = (name, renderer, options = {}) => {
     ...options,
   };
 
-  componentRegistry.set(name, {
-    renderer,
-    options: mergedOptions,
-  });
+
+  if (!customElements.get(name)) {
+    customElements.define(
+      name,
+      class extends BaseComponent {
+        static renderer = renderer;
+        static options = mergedOptions;
+      }
+    );
+  }
 
   return { name, renderer, options: mergedOptions };
 };

@@ -5,7 +5,7 @@ import { html } from '../../src';
 import './components/Counter.js';
 import './components/TaskBoard.js';
 
-export const App = () => html`
+export const App = html`
     <section>
         <h3>Updates:</h3>
         <ul>
