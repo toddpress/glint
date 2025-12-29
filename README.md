@@ -1,32 +1,30 @@
-# ⚡ `glintjs` (Glint)
+# ⚡ glintjs (Glint)
 
-*A tiny, signal-powered framework for building Web Components that doesn’t hate you back.*
+*A small system for thinking clearly about UI — and a runtime that stays out of the way.*
 
-`glintjs` is a tiny, reactive framework for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with **no build step**, **no virtual DOM**, and **no ceremony**.
+Glint is a tiny, signal-driven runtime for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with **no build step**, **no virtual DOM**, and **no hidden machinery**.
 
-No JSX. <br>
-No virtual DOM. <br>
-No compiler. <br>
-No bullshit.
+No JSX.  
+No compiler.  
+No re-rendering theater.
 
-Just components that feel obvious to write and easy to reason about.
+Just components whose identity and behavior are explicit.
 
 ---
 
 ## Why Glint?
 
-**Web Components are powerful — but the DX is, let's say... absolute dogshit.**
+**Most UI complexity is accidental — and most bugs are identity bugs.**
 
-Glint exists to answer a simple question:
+Glint exists to explore a simpler question:
 
-> *What if Web Components had React-level ergonomics without React-level complexity?*
+> *What does UI look like when identity is explicit and change is localized?*
 
-### Glint is:
-- ⚡ **Signal-driven** (fine-grained updates, no re-render storms)
-- 🧠 **Declarative** (templates read like HTML, not DSL soup)
-- 🪶 **Tiny** (one small runtime, no build tools required)
-- 🧩 **Composable** (helpers, fragments, and components all compose naturally)
-- 🌐 **Native** (real DOM, real Custom Elements, real HTML)
+Instead of abstracting the platform away, Glint stays close to it — making state, dependencies, and updates visible and easy to reason about.
+
+Glint is both:
+- a practical way to write Web Components, and
+- a *thinking tool* for understanding UI systems.
 
 ---
 
@@ -47,178 +45,238 @@ define('my-counter', ({ state }) => {
 });
 ```
 
-That’s it.
+That’s the entire model.
 
-No hooks.
-No lifecycle gymnastics.
-No re-render loops.
+When `count` changes, **only the DOM nodes that depend on it update**.
 
-When `count` changes, **only the text nodes that depend on it update**.
-
----
-
-## Core Concepts
-
-### Components
-
-Component definitions are just function invocations with a name and a render function that returns a template:
-
-```js
-define('my-element', (ctx) => {
-  return html`<p>Hello, world</p>`;
-});
-```
-
-They’re backed by real Custom Elements, not abstractions pretending to be the DOM.
+No hooks.  
+No lifecycle choreography.  
+No re-render cycles.
 
 ---
 
-### Templates (`html`)
+## Core Ideas (Briefly)
 
-Glint uses **real tagged template literals**:
+### Components are real
+
+Each component maps directly to a native Custom Element.
+
+No virtual tree.  
+No reconciliation.  
+No pretending to be the DOM.
+
+---
+
+### Templates are just HTML
+
+Glint uses tagged template literals:
 
 ```js
 html`
-  <div class="card">
-    <h2>${title}</h2>
-    <p>${description}</p>
-  </div>
+  <h2>${title}</h2>
+  <p>${description}</p>
 `
 ```
 
-Expressions can be:
-- signals
-- computed values
-- functions
-- arrays
-- nested templates
-
-Glint handles the rest.
+Expressions can be signals, functions, arrays, or nested templates.  
+The runtime connects dependencies and steps aside.
 
 ---
 
-### Signals & State
-
-Inside components, you get a scoped state API:
+### Signals are identity
 
 ```js
 const count = ctx.state.signal(0);
-const doubled = ctx.state.computed(() => count() * 2);
 ```
 
-Signals are functions:
-- call with no args → get
-- call with a value → set
+Signals are stable, explicit references:
+- call with no args → read
+- call with a value → write
 
 ```js
-count();      // get
-count(10);    // set
+count();    // read
+count(10);  // write
 ```
 
-No proxies or magic getters.
+No proxies.  
+No implicit tracking rules.
+
+If something matters over time, it has a signal.
 
 ---
 
-### Control Flow Helpers
-
-Glint provides minimal, composable helpers for common template patterns.
-
-#### `each()`
+### Control flow is just functions
 
 ```js
-${each(items, (item) => html`
-  <li>${item}</li>
-`)}
+${each(items, item => html`<li>${item}</li>`)}
+${when(loading, () => html`<p>Loading…</p>`)}
 ```
 
-#### `when()`
-
-```js
-${when(isLoading, () => html`
-  <p>Loading…</p>
-`)}
-```
-
-#### `match()`
-
-```js
-${match(status, {
-  success: () => html`<p>Success</p>`,
-  error: () => html`<p>Error</p>`,
-  default: () => html`<p>Idle</p>`
-})}
-```
-
-They’re just functions that return fragments — nothing special, nothing hidden.
+No syntax.  
+No magic.  
+Just composition.
 
 ---
 
-## Rendering an App
+## Rendering
 
-Here’s your entry point:
+Glint does not have a “root component” or a render loop.
+
+It does not run your application.
+It does not re-invoke render functions.
+It does not own your lifecycle.
+
+**`render` places DOM into the world — once — and steps aside.**
+
+---
+
+### `render(target, template)`
 
 ```js
-import { createRoot, render, html } from 'glintjs';
+import { render, html } from 'glintjs';
 
-const App = () => html`
-  <h1>Hello from Glint</h1>
+render('#app', html`
+  <h1>Hello</h1>
   <my-counter></my-counter>
-`;
-
-createRoot('#glint-app').render(App);
+`);
 ```
 
-And in your HTML:
+- `target` is a DOM node or selector
+- `template` is a Glint template
 
-```html
-<body>
-  <div id="glint-app"></div>
-</body>
+That’s it.
+
+After this call:
+- the DOM exists
+- Custom Elements instantiate naturally
+- signals wire themselves to the nodes that depend on them
+- updates happen locally and automatically
+
+There is no global render cycle.
+
+---
+
+### Why `render` does not accept a function
+
+Earlier versions allowed this pattern:
+
+```js
+render('#app', () => html`
+  <h1>Hello</h1>
+  <my-counter></my-counter>
+`);
 ```
+
+This has been deprecated.
+
+Passing a function implies:
+- a render phase
+- a re-invocable root
+- framework ownership of application flow
+
+Glint does not work that way.
+
+There is no top-level re-render.
+There is no special “root” execution context.
+There is no framework-managed lifecycle.
+
+Accepting a function would suggest behavior that does not exist.
+
+---
+
+### The mental model
+
+Think of `render` as **placement**, not execution.
+
+You are saying:
+
+> “Put this DOM here.”
+
+Not:
+
+> “Run my app.”
+
+Once placed:
+- the browser manages element lifecycles
+- signals manage change
+- identity lives where it belongs: in the DOM
+
+Glint stays out of the way.
+
+---
+
+### Rendering is optional
+
+You don’t need `render` at all if you don’t want it.
+
+Because Glint is built on native Web Components, you can also:
+
+- author components
+- import them
+- use them directly in HTML
+
+`render` exists purely as a convenience — not as a governing abstraction.
+
+---
+
+### Summary
+
+- `render` runs once
+- it places a template into a container
+- it does not imply re-rendering
+- it does not define application structure
+- it does not own lifecycle or flow
+
+Glint enables applications without prescribing them.
 
 ---
 
 ## Philosophy
 
-Glint is built on a few strong beliefs:
+Glint is built around a few constraints:
 
-- **Clarity beats cleverness**
-- **Signals should be explicit**
-- **The Platform is not the enemy**
-- **APIs should feel frictionless**
-- **Abstractions must earn their keep**
+- **Clarity over cleverness**
+- **Explicit identity**
+- **Localized change**
+- **Minimal surface area**
+- **The platform is the foundation**
 
-Or, more succinctly, Glint is:
+Or more simply:
 
-> *The no-bullshit, bullshit web component framework.*
+> *Glint prefers being understandable to being impressive.*
 
-<sub><em>(affectionate, not hostile)</em></sub>
+You can use it — or just read it... Or don't! 😉
 
 ---
 
 ## What Glint Is *Not*
 
-Glint is NOT:
-- a React clone
+Glint is not:
+- a React alternative (in the best of ways)
 - a virtual DOM framework
-- a Svelte wannabe
 - a compiler
-- a full application platform
+- an application governor; it's a UI substrate.
+- an attempt to “win” the ecosystem
 
-Glint is a **toolkit for authoring components cleanly** — and then getting the hell out of the way.
+It’s a **reference implementation of a way of thinking about UI** — usable as a runtime, valuable as a lens.
 
 ---
 
 ## Status
 
-⚠️ Glint is currently:
-- 🧪 Actively developed
-- ✅ Stable for experimentation
-- ⚠️ Not stable for production deployment
+⚠️ Experimental.
 
-That said — the core architecture is solid, minimal, and intentionally hard to over-engineer.
+Glint is stable enough to explore and reason with, but not yet recommended for production use yet:
+- Breaking API changes _could_ happen as glint is an evolving experiment
+- continuation of first point: README docs may be out of sync with some branches' APIs 
+
+
+The smallness is intentional.
 
 ---
 
-## MIT License
-<small>Do whatever you want. Just don’t make it worse 😉</small>
+## License
+
+MIT  
+<small>Do whatever you want. Just don’t pretend it’s something it isn’t.
+</small>
