@@ -111,3 +111,9 @@ export const createStateAPI = () => {
 
   return state;
 };
+
+// ------------------------------------------------------------
+// Bare signal/computed factories
+// ------------------------------------------------------------
+export const state = (v) => wrap(new State(v));
+export const computed = (fn) => wrap(new Computed(fn));
