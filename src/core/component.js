@@ -1,4 +1,4 @@
-import { createStateAPI, Signal } from '../signals';
+import { createStateContainer, Signal } from '../signals';
 import { renderTemplate } from './template';
 import { safeParse } from './utils';
 
@@ -25,7 +25,7 @@ export class BaseComponent extends HTMLElement {
       : this;
 
     this.props = this._collectProps();
-    this.state = createStateAPI();
+    this.state = createStateContainer();
 
     this.ctx = {
       el: this,

@@ -67,10 +67,10 @@ export function unwrapOne(v) {
 }
 
 // ------------------------------------------------------------
-// createStateAPI — ctx.state() factory
+// createStateContainer — ctx.state() factory
 // ------------------------------------------------------------
 
-export const createStateAPI = () => {
+export const createStateContainer = () => {
   const signalFn = (v) => wrap(new State(v));
   const computedFn = (fn) => wrap(new Computed(fn));
 
@@ -111,9 +111,3 @@ export const createStateAPI = () => {
 
   return state;
 };
-
-// ------------------------------------------------------------
-// Bare signal/computed factories
-// ------------------------------------------------------------
-export const state = (v) => wrap(new State(v));
-export const computed = (fn) => wrap(new Computed(fn));

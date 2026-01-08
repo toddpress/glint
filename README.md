@@ -4,8 +4,8 @@
 
 Glint is a tiny, signal-driven runtime for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with **no build step**, **no virtual DOM**, and **no hidden machinery**.
 
-No JSX.  
-No compiler.  
+No JSX.
+No compiler.
 No re-rendering theater.
 
 Just components whose identity and behavior are explicit.
@@ -49,8 +49,8 @@ That’s the entire model.
 
 When `count` changes, **only the DOM nodes that depend on it update**.
 
-No hooks.  
-No lifecycle choreography.  
+No hooks.
+No lifecycle choreography.
 No re-render cycles.
 
 ---
@@ -61,8 +61,8 @@ No re-render cycles.
 
 Each component maps directly to a native Custom Element.
 
-No virtual tree.  
-No reconciliation.  
+No virtual tree.
+No reconciliation.
 No pretending to be the DOM.
 
 ---
@@ -78,7 +78,7 @@ html`
 `
 ```
 
-Expressions can be signals, functions, arrays, or nested templates.  
+Expressions can be signals, functions, arrays, or nested templates.
 The runtime connects dependencies and steps aside.
 
 ---
@@ -98,7 +98,7 @@ count();    // read
 count(10);  // write
 ```
 
-No proxies.  
+No proxies.
 No implicit tracking rules.
 
 If something matters over time, it has a signal.
@@ -112,9 +112,107 @@ ${each(items, item => html`<li>${item}</li>`)}
 ${when(loading, () => html`<p>Loading…</p>`)}
 ```
 
-No syntax.  
-No magic.  
+No syntax.
+No magic.
 Just composition.
+
+---
+
+## Models (Optional)
+
+Sometimes state and behavior belong to a *concept*, not a component.
+
+Forms.
+Workflows.
+Async coordination.
+Shared application state.
+
+For those cases, Glint provides **models**.
+
+A model is a small unit of **stateful behavior** that:
+- owns its own state container
+- exposes actions and derived values
+- knows nothing about the DOM or components
+
+Models are optional — Glint works perfectly without them.
+
+---
+
+### Defining a model
+
+```js
+import { model, createStateContainer } from 'glintjs';
+
+const formModel = model(() => {
+  const state = createStateContainer();
+
+  const value = state.signal('');
+  const valid = state.computed(() => value().length > 0);
+
+  function reset() {
+    value('');
+  }
+
+  return { value, valid, reset };
+});
+```
+
+This defines *what the model is*, not how long it lives.
+
+---
+
+### Owned models (component lifetime)
+
+If a model instance should live and die with a component, mark it as **owned**.
+
+```js
+const formModel = model.owned(() => {
+  const state = createStateContainer();
+
+  const value = state.signal('');
+  const valid = state.computed(() => value().length > 0);
+
+  return { value, valid };
+});
+```
+
+Use it inside a component:
+
+```js
+define('my-form', (ctx) => {
+  const form = formModel(ctx);
+
+  ctx.view(() => html`
+    <input
+      value=${form.value()}
+      oninput=${e => form.value(e.target.value)}
+    />
+  `);
+});
+```
+
+Ownership is explicit at the callsite — no hidden scoping or magic.
+
+---
+
+### Shared models
+
+If a model should be shared, opt in explicitly:
+
+```js
+const sessionModel = model.shared('session', () => {
+  const state = createStateContainer();
+  const user = state.signal(null);
+  return { user };
+});
+
+const session = sessionModel();
+```
+
+---
+
+> Models are not hooks, not components, and not required.
+> They’re just **named, intentional state boundaries** when you need them.
 
 ---
 
@@ -268,7 +366,7 @@ It’s a **reference implementation of a way of thinking about UI** — usable a
 
 Glint is stable enough to explore and reason with, but not yet recommended for production use yet:
 - Breaking API changes _could_ happen as glint is an evolving experiment
-- continuation of first point: README docs may be out of sync with some branches' APIs 
+- continuation of first point: README docs may be out of sync with some branches' APIs
 
 
 The smallness is intentional.
@@ -277,6 +375,6 @@ The smallness is intentional.
 
 ## License
 
-MIT  
+MIT
 <small>Do whatever you want. Just don’t pretend it’s something it isn’t.
 </small>

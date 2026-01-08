@@ -14,6 +14,9 @@ export { html, define, render } from './core';
 // Template helpers
 export { each, when, match } from './patterns';
 
+// State
+export { model } from './patterns/model';
+export { createStateContainer } from './core/signals';
 
 // Advanced signals usage
 
@@ -22,4 +25,3 @@ export { each, when, match } from './patterns';
 // directly — but power users can opt in.
 
 // export { Signal } from './core/signals';
-// export { createStateAPI, wrap } from './core/signals';
