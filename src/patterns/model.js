@@ -14,12 +14,11 @@ import { __DEV__ as IS_DEV } from "../internal/env";
 import { devlog } from "../internal/logging/devlog";
 
 const model = (factory) => {
-  if (IS_DEV && factory.length !== 0) {
-    devlog.warn(
-      '[glint:model] Model factories must be zero-arity.\n' +
-      'If you need component ownership, use model.owned(() => { ... }) ' +
-      'and pass ctx at instantiation time.'
-    );
+  if (factory.length !== 0) {
+    devlog.warn('MODEL_FACTORY_HAS_PARAMS', {
+      name: factory.name,
+      arity: factory.length,
+    });
   }
 
   return factory;
@@ -29,8 +28,8 @@ model.owned = (factory) => {
   const create = model(factory);
 
   return (ctx) => {
-    if (IS_DEV && !ctx) {
-      devlog.warn('[glint:model.owned] Missing ctx');
+    if (!ctx) {
+      devlog.warn('MODEL_OWNED_WITHOUT_CONTEXT');
     }
 
     const instance = create();

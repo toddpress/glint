@@ -4,6 +4,9 @@ export const isString = (val) => typeof val === 'string';
 export const isNumber = (val) => typeof val === 'number';
 export const isBoolean = (val) => typeof val === 'boolean';
 
+export const iif = (condition, consequent, alternative) =>
+  condition ? consequent : alternative;
+
 export const isPrimitive = (v) =>
   v == null || isString(v) || isNumber(v) || isBoolean(v);
 
