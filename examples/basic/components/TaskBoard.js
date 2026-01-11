@@ -1,32 +1,150 @@
-import { define, html, each, when, match } from '../../../src';
+import {
+  define,
+  html,
+  each,
+  when,
+  match,
+  model,
+  createStateContainer,
+} from '../../../src';
 
 define('tsp-task-board', (ctx) => {
-  const { props, state, emit, onMount, onDestroy, effect } = ctx;
+  const { props, emit, onMount, onDestroy, effect } = ctx;
 
-  const { nameFilter } = state({
-    nameFilter: ''
+  const board = taskBoardModel.owned(props.initialTasks ?? []);
+
+  onMount(() => {
+    console.log('[TaskBoard] mounted');
   });
 
-  const tasks = state.signal(props.initialTasks ?? []);
+  onDestroy(() => {
+    console.log('[TaskBoard] destroyed');
+  });
+
+  effect(() => {
+    console.log('Filter changed:', board.filter());
+  });
+
+  effect(() => {
+    console.log('Tasks updated:', board.taskCount());
+  });
+
+  function addTask() {
+    const result = board.addTask();
+    if (result) emit('added', result);
+  }
+
+  return html`
+    <div class="taskboard" style="font-family: system-ui; padding: 0.5rem;">
+
+      <header style="margin-bottom: 1rem;">
+        <h2>${props.title ?? 'Tasks'}</h2>
+
+        <div style="display: flex; gap: 0.5rem; margin: 0.5rem 0;">
+          ${['all', 'active', 'completed'].map(
+            (f) => html`
+              <button
+                onclick=${() => board.filter(f)}
+                style="
+                  padding: 0.25rem 0.5rem;
+                  background: ${board.filter() === f ? '#333' : '#eee'};
+                  color: ${board.filter() === f ? 'white' : 'black'};
+                  border: none;
+                  border-radius: 3px;
+                "
+              >
+                ${f}
+              </button>
+            `
+          )}
+        </div>
+
+        <input
+          :value=${board.nameFilter}
+          oninput=${(e) => board.nameFilter(e.target.value)}
+          placeholder="Filter by name..."
+          style="padding: 0.25rem 0.5rem; width: 100%;"
+        />
+      </header>
+
+      <section style="margin-bottom: 1rem;">
+        <input
+          :value=${board.newText}
+          oninput=${(e) => board.newText(e.target.value)}
+          placeholder="New task..."
+        />
+        <button onclick=${addTask} style="margin-left: 0.5rem;">
+          Add
+        </button>
+      </section>
+
+      <ul style="list-style: none; padding: 0; margin: 0;">
+        ${each(
+          board.filtered,
+          (task) => html`
+            <li style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+              <label style="flex: 1; display: flex; gap: 0.5rem;">
+                <input
+                  type="checkbox"
+                  :checked=${task.completed}
+                  onchange=${() => board.toggleTask(task.id)}
+                />
+                <span style="text-decoration:${task.completed ? 'line-through' : 'none'};">
+                  ${task.text}
+                </span>
+              </label>
+
+              ${when(!task.completed, () => html`
+                <button
+                  onclick=${() => board.removeTask(task.id)}
+                  style="
+                    background: #c00;
+                    color: white;
+                    border: none;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 3px;
+                  "
+                >
+                  ✕
+                </button>
+              `)}
+            </li>
+          `
+        )}
+      </ul>
+
+      ${match(board.taskCount, {
+        0: () => html`<p>No tasks yet.</p>`,
+        default: () => html`<p>${board.taskCount} total tasks</p>`
+      })}
+    </div>
+  `;
+});
+
+
+export const taskBoardModel = model((initialTasks = []) => {
+  const state = createStateContainer();
+
+  const tasks = state.signal(initialTasks);
   const filter = state.signal('all'); // 'all' | 'active' | 'completed'
+  const nameFilter = state.signal('');
   const newText = state.signal('');
   const nextId = state.signal(1);
 
   const filtered = state.computed(() => {
     const f = filter();
     const nf = nameFilter().toLowerCase();
+
     return tasks().filter((t) => {
-      const matchesFilter =
-        f === 'all'
-          ? true
-          : f === 'active'
-          ? !t.completed
-          : t.completed;
+      const matchesStatus = f === 'all'
+          ? true : f === 'active'
+            ? !t.completed
+            : t.completed;
 
       const matchesName =
         nf === '' || t.text.toLowerCase().includes(nf);
 
-      return matchesFilter && matchesName;
+      return matchesStatus && matchesName;
     });
   });
 
@@ -41,7 +159,7 @@ define('tsp-task-board', (ctx) => {
     nextId(id + 1);
     newText('');
 
-    emit('added', { id, text });
+    return { id, text };
   }
 
   function toggleTask(id) {
@@ -56,106 +174,20 @@ define('tsp-task-board', (ctx) => {
     tasks(tasks().filter((t) => t.id !== id));
   }
 
-  onMount(() => {
-    console.log('[TaskBoard] mounted');
-  });
+  return {
+    // state
+    tasks,
+    filter,
+    nameFilter,
+    newText,
 
-  onDestroy(() => {
-    console.log('[TaskBoard] destroyed');
-  });
+    // derived
+    filtered,
+    taskCount,
 
-  effect(() => {
-    console.log('Filter changed:', filter());
-  });
-
-  effect(() => {
-    console.log('Tasks updated:', tasks().length);
-  });
-
-  return html`
-    <div class="taskboard" style="font-family: system-ui; padding: 0.5rem;">
-
-      <header class="header" style="margin-bottom: 1rem;">
-        <h2>${props.title ?? "Tasks"}</h2>
-
-        <div class="filters" style="display:flex; gap:0.5rem; margin:0.5rem 0;">
-          ${['all', 'active', 'completed'].map(
-            (f) => html`
-              <button
-                onclick=${() => filter(f)}
-                style="
-                  padding: 0.25rem 0.5rem;
-                  background: ${filter() === f ? "#333" : "#eee"};
-                  color: ${filter() === f ? "white" : "black"};
-                  border: none;
-                  border-radius: 3px;
-                "
-              >
-                ${f}
-              </button>
-            `
-          )}
-        </div>
-
-        <input
-          :value=${nameFilter}
-          oninput=${(e) => nameFilter(e.target.value)}
-          placeholder="Filter by name..."
-          style="padding:0.25rem 0.5rem; width: 100%;"
-        />
-      </header>
-
-      <section class="new-task" style="margin-bottom:1rem;">
-        <input
-          :value=${newText}
-          oninput=${(e) => newText(e.target.value)}
-          placeholder="New task..."
-          style="padding:0.25rem 0.5rem;"
-        />
-        <button onclick=${addTask} style="margin-left:0.5rem;">Add</button>
-      </section>
-
-      <ul class="tasks" style="list-style:none; padding:0; margin:0;">
-        ${each(
-          filtered,
-          (task) => html`
-            <li class="task" style="display:flex; align-items:center; margin-bottom:0.5rem;">
-              <label style="flex:1; display:flex; align-items:center; gap:0.5rem;">
-                <input
-                  type="checkbox"
-                  :checked=${task.completed}
-                  onchange=${() => toggleTask(task.id)}
-                />
-                <span style="text-decoration:${task.completed ? "line-through" : "none"};">
-                  ${task.text}
-                </span>
-              </label>
-
-              ${when(!task.completed, () => html`
-                <button
-                  onclick=${() => removeTask(task.id)}
-                  style="
-                    background:#c00;
-                    color:white;
-                    border:none;
-                    padding:0.25rem 0.5rem;
-                    border-radius:3px;
-                  "
-                >
-                  ✕
-                </button>
-              `)}
-            </li>
-          `
-        )}
-      </ul>
-
-      ${match(taskCount, {
-        0: () => html`<p class="empty">No tasks yet.</p>`,
-        default: () =>
-          html`<p class="count">${taskCount} total tasks</p>`
-      })}
-
-    </div>
-  `;
+    // actions
+    addTask,
+    toggleTask,
+    removeTask
+  };
 });

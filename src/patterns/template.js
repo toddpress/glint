@@ -7,7 +7,7 @@
 // - each / when / match : canonical control-flow helpers
 // ============================================================
 
-import { isSignal, isComputed } from './utils.js';
+import { isSignal, isComputed } from '../core/utils.js';
 
 // ------------------------------------------------------------
 // Helper core utilities

@@ -209,10 +209,10 @@ function unwrapOne(v) {
 }
 
 // ------------------------------------------------------------
-// createStateAPI — ctx.state() factory
+// createStateContainer — ctx.state() factory
 // ------------------------------------------------------------
 
-const createStateAPI = () => {
+const createStateContainer = () => {
   const signalFn = (v) => wrap(new State(v));
   const computedFn = (fn) => wrap(new Computed(fn));
 
@@ -618,7 +618,7 @@ class BaseComponent extends HTMLElement {
       : this;
 
     this.props = this._collectProps();
-    this.state = createStateAPI();
+    this.state = createStateContainer();
 
     this.ctx = {
       el: this,

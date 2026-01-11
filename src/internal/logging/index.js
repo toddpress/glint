@@ -1,1 +1,1 @@
-export { devlog } from './devlog';
+export { emit as _emit } from './emit';

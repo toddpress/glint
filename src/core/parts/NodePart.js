@@ -3,7 +3,7 @@ import {
   isComputed,
   isFunction,
   isPrimitive,
-} from '../utils.js';
+} from '../utils';
 
 import { unwrapOne } from '../signals';
 

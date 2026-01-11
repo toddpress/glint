@@ -1,6 +1,7 @@
-import { createStateAPI, Signal } from './signals';
-import { renderTemplate } from './template.js';
-import { safeParse } from './utils.js';
+import { _emit } from '../internal/logging';
+import { createStateContainer, Signal } from './signals';
+import { renderTemplate } from './template';
+import { safeParse } from './utils';
 
 // ------------------------------------------------------------
 // BaseComponent
@@ -25,7 +26,7 @@ export class BaseComponent extends HTMLElement {
       : this;
 
     this.props = this._collectProps();
-    this.state = createStateAPI();
+    this.state = createStateContainer();
 
     this.ctx = {
       el: this,
@@ -89,18 +90,26 @@ export class BaseComponent extends HTMLElement {
   }
 }
 
-export const componentRegistry = new Map();
-
 export const define = (name, renderer, options = {}) => {
   const mergedOptions = {
     ...BaseComponent.options,
     ...options,
   };
 
-  componentRegistry.set(name, {
-    renderer,
-    options: mergedOptions,
-  });
+  if (customElements.has(name)) {
+    _emit('COMPONENT_ALREADY_DEFINED', { name });
+    return;
+  }
 
-  return { name, renderer, options: mergedOptions };
+  if (!customElements.get(name)) {
+    customElements.define(
+      name,
+      class extends BaseComponent {
+        static renderer = renderer;
+        static options = mergedOptions;
+      }
+    );
+  }
+
+  return customElements.get(name);
 };
