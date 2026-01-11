@@ -20,5 +20,5 @@
  * Core Glint remains small, explicit, and unopinionated.
  */
 
-export { model } from './model.js';
-export { each, when, match } from './template.js';
+export { model } from './model';
+export { each, when, match } from './template';

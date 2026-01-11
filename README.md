@@ -213,20 +213,19 @@ They’re just **named state boundaries** for when things start getting messy.
 
 ---
 
-## Rendering
+## mounting your app - rendering is a lie
 
 Glint does not “run” your application.
 
 There’s no render loop.<br>
 No re-invocation cycle.<br>
-No framework-managed sense of “now we update.”<br>
+No framework-managed sense of “now we update (we think)”<br>
 
-The `render` convenience utility places DOM into the world — once — and steps aside.
-
+The `mount` convenience utility places DOM into the world — once — and steps aside.
 ```js
-import { render, html } from 'glintjs';
+import { mount, html } from 'glintjs';
 
-render('#app', html`
+mount('#app', html`
   <h1>Hello</h1>
   <my-counter></my-counter>
 `);
@@ -237,7 +236,7 @@ After this:
 - Custom Elements instantiate naturally
 - signals update only what depends on them
 
-Think of `render` as **placement**, not execution.
+Think of `mount` as **placement**, not execution.
 
 You’re saying:
 
@@ -247,7 +246,7 @@ Not:
 
 > “Please take over my application.”
 
-Because Glint is built on native Web Components, `render` is completely optional...<br>
+Because Glint is built on native Web Components, `mount` is completely optional...<br>
 You can also import components and use them directly in HTML.
 
 ---

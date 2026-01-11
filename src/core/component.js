@@ -96,12 +96,13 @@ export const define = (name, renderer, options = {}) => {
     ...options,
   };
 
-  if (customElements.has(name)) {
+  const existing = customElements.get(name);
+  if (existing) {
     _emit('COMPONENT_ALREADY_DEFINED', { name });
-    return;
+    return existing;
   }
 
-  if (!customElements.get(name)) {
+  try {
     customElements.define(
       name,
       class extends BaseComponent {
@@ -109,6 +110,10 @@ export const define = (name, renderer, options = {}) => {
         static options = mergedOptions;
       }
     );
+  } catch (err) {
+    // Covers race conditions or double-define from another bundle
+    _emit('COMPONENT_ALREADY_DEFINED', { name, err });
+    return customElements.get(name);
   }
 
   return customElements.get(name);

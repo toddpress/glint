@@ -1,11 +1,11 @@
 import './components'
 
 import {
-  render,
+  mount,
   html,
 } from '../../src'
 
-render('#glint-app', html`
+mount('#glint-app', html`
     <section>
         <h3>Signals, Computed, Effects</h3>
         <tsp-counter start="5" />

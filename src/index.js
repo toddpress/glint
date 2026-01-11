@@ -8,7 +8,7 @@
 
 
 // Core authoring primitives
-export { html, define, render } from './core';
+export { html, define, mount } from './core';
 
 
 // Template helpers
