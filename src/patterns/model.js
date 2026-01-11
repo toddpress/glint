@@ -10,12 +10,11 @@
  * passed through props like any other value.
  */
 
-import { __DEV__ as IS_DEV } from "../internal/env";
-import { devlog } from "../internal/logging/devlog";
+import { _emit } from "../internal/logging";
 
 const model = (factory) => {
   if (factory.length !== 0) {
-    devlog.warn('MODEL_FACTORY_HAS_PARAMS', {
+    _emit('MODEL_FACTORY_HAS_PARAMS', {
       name: factory.name,
       arity: factory.length,
     });
@@ -29,7 +28,7 @@ model.owned = (factory) => {
 
   return (ctx) => {
     if (!ctx) {
-      devlog.warn('MODEL_OWNED_WITHOUT_CONTEXT');
+      _emit('MODEL_OWNED_WITHOUT_CONTEXT');
     }
 
     const instance = create();

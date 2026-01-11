@@ -1,3 +1,4 @@
+import { _emit } from '../internal/logging';
 import { createStateContainer, Signal } from '../signals';
 import { renderTemplate } from './template';
 import { safeParse } from './utils';
@@ -89,14 +90,16 @@ export class BaseComponent extends HTMLElement {
   }
 }
 
-export const componentRegistry = new Map();
-
 export const define = (name, renderer, options = {}) => {
   const mergedOptions = {
     ...BaseComponent.options,
     ...options,
   };
 
+  if (customElements.has(name)) {
+    _emit('COMPONENT_ALREADY_DEFINED', { name });
+    return;
+  }
 
   if (!customElements.get(name)) {
     customElements.define(
@@ -108,5 +111,5 @@ export const define = (name, renderer, options = {}) => {
     );
   }
 
-  return { name, renderer, options: mergedOptions };
+  return customElements.get(name);
 };

@@ -4,14 +4,9 @@ export const isString = (val) => typeof val === 'string';
 export const isNumber = (val) => typeof val === 'number';
 export const isBoolean = (val) => typeof val === 'boolean';
 
-export const iif = (condition, consequent, alternative) =>
-  condition ? consequent : alternative;
-
 export const isPrimitive = (v) =>
   v == null || isString(v) || isNumber(v) || isBoolean(v);
 
-
-// --- scheduling.js ---
 
 export function debounce(fn, delay = 300, options = {}) {
   const { leading = false, trailing = true } = options;
@@ -62,6 +57,9 @@ export const safeParse = (v) => {
     return v;
   }
 };
+
+export const iif = (condition, consequent, alternative) =>
+  condition ? consequent : alternative;
 
 export const generateUuid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2);
