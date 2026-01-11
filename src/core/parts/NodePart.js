@@ -3,9 +3,9 @@ import {
   isComputed,
   isFunction,
   isPrimitive,
-} from '../utils.js';
+} from '../utils';
 
-import { unwrapOne } from '../../signals/index.js';
+import { unwrapOne } from '../signals';
 
 export class NodePart {
   constructor(marker, ctxEffect) {

@@ -1,5 +1,5 @@
 import { _emit } from '../internal/logging';
-import { createStateContainer, Signal } from '../signals';
+import { createStateContainer, Signal } from './signals';
 import { renderTemplate } from './template';
 import { safeParse } from './utils';
 

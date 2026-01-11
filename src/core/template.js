@@ -6,7 +6,7 @@ import {
   walkTextNodes,
   walkElementNodes,
   mapAttrs,
-} from './dom/walk';
+} from './dom';
 
 import {
   createMarker,

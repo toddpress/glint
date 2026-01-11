@@ -1,4 +1,4 @@
-import { unwrapOne } from '../../signals/signals.js';
+import { unwrapOne } from '../signals';
 
 export class AttrPart {
   constructor(el, attrName, ctxEffect) {

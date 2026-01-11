@@ -1,4 +1,4 @@
-import { unwrapOne } from '../../signals';
+import { unwrapOne } from '../signals';
 
 export class PropPart {
   constructor(el, propName, ctxEffect) {
