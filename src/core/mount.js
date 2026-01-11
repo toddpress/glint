@@ -2,7 +2,7 @@ import { renderTemplate } from './template';
 import { Signal } from './signals';
 
 
-export const mount = (template, target = document.body) => {
+export const mount = (target = document.body, template) => {
   const rootNode =
     typeof target === 'string'
       ? document.querySelector(target)
