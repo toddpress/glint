@@ -202,7 +202,7 @@ function wrap(base, { customSetter = null } = {}) {
 
 // unwrapOne — one layer of reactive unwrapping
 function unwrapOne(v) {
-  if (isSignal(v) || isComputed(v)) return v();
+  if (isSignal$1(v) || isComputed(v)) return v();
   return v;
 }
 
@@ -253,65 +253,192 @@ const createStateContainer = () => {
 };
 
 class NodePart {
-  constructor(marker, ctxEffect) {
-    this.marker = marker;
+  constructor(endMarker, ctxEffect) {
+    this.end = endMarker;
     this.ctxEffect = ctxEffect;
-    this.nodes = [];
+
+    this.start = null;           // created lazily
+    this.effectStop = null;      // this part’s own reactive subscription
+    this.child = null;           // e.g. KeyedEachPart
+  }
+
+  bind(getter) {
+    if (!this.start) {
+      this.start = document.createComment('gl:part');
+      this.end.parentNode?.insertBefore(this.start, this.end);
+    }
+
+    // One reactive subscription per NodePart
+    this.effectStop?.();
+    this.effectStop = this.ctxEffect(() => {
+      Signal.batch(() => this.update(getter));
+    });
+  }
+
+  dispose() {
+    this.child?.dispose?.();
+    this.child = null;
+
+    this.effectStop?.();
+    this.effectStop = null;
+
+    this.clear();
+
+    this.start?.remove();
+    this.start = null;
+    // end marker is owned by template compilation
+  }
+
+  clear() {
+    if (!this.start) return;
+
+    // Remove everything between start and end
+    let n = this.start.nextSibling;
+    while (n && n !== this.end) {
+      const next = n.nextSibling;
+      n.remove();
+      n = next;
+    }
+  }
+
+  insert(node) {
+    this.end.parentNode?.insertBefore(node, this.end);
   }
 
   update(getter) {
-    // Remove previous nodes
-    this.nodes.forEach((n) => n.remove());
-    this.nodes = [];
+    let value = unwrapOne(getter());
 
-    let value = getter();
-    value = unwrapOne(value);
-
-    // Support fn -> value pattern
     if (isFunction(value) && !isSignal$1(value) && !isComputed(value)) {
       value = value();
     }
 
-    const parent = this.marker.parentNode;
-    if (!parent) return;
+    if (value == null || value === false) {
+      this.child?.dispose?.();
+      this.child = null;
+      this.clear();
+      return;
+    }
 
-    const appendNode = (node) => {
-      parent.insertBefore(node, this.marker);
-      this.nodes.push(node);
-    };
-
-    const handleValue = (val) => {
-      val = unwrapOne(val);
-
-      if (isFunction(val) && !isSignal$1(val) && !isComputed(val)) {
-        val = val();
+    // Keyed each descriptor takes over this part’s range
+    if (value?.__glintEach && value.keyed) {
+      if (!(this.child instanceof KeyedEachPart)) {
+        this.child?.dispose?.();
+        this.child = new KeyedEachPart(this.start, this.end, this.ctxEffect);
       }
+      this.child.update(value.items);
+      return;
+    }
 
-      if (val == null || val === false) return;
+    // Plain mode
+    this.child?.dispose?.();
+    this.child = null;
+    this.clear();
 
-      // Template / fragment / arrays are handled by renderTemplate
-      // and helpers in the template layer; here we treat non-primitive
-      // values as stringified fallback.
-      if (Array.isArray(val)) {
-        val.forEach(handleValue);
-        return;
-      }
-
-      if (isPrimitive(val)) {
-        appendNode(document.createTextNode(String(val)));
-        return;
-      }
-
-      appendNode(document.createTextNode(String(val)));
-    };
-
-    handleValue(value);
+    this.#renderValue(value);
   }
 
-  bind(getter) {
-    this.ctxEffect(() => {
-      this.update(getter);
+  #renderValue(val) {
+    val = unwrapOne(val);
+
+    if (isFunction(val) && !isSignal$1(val) && !isComputed(val)) {
+      val = val();
+    }
+
+    if (val == null || val === false) return;
+
+    if (isTemplate(val)) {
+      // IMPORTANT: renderTemplate receives a ctxEffect for nested parts.
+      // For correctness, nested parts must also be range-based like this one.
+      this.insert(renderTemplate(val, this.ctxEffect));
+      return;
+    }
+
+    if (Array.isArray(val)) {
+      val.forEach((x) => this.#renderValue(x));
+      return;
+    }
+
+    this.insert(document.createTextNode(String(val)));
+  }
+}
+
+class KeyedEachPart {
+  constructor(start, end, ctxEffect) {
+    this.start = start;
+    this.end = end;
+    this.ctxEffect = ctxEffect;
+    this.entries = new Map(); // key -> { start, end, part }
+  }
+
+  dispose() {
+    Array.from(this.entries.values()).forEach((e) => {
+      e.part.dispose?.();
+      e.start.remove();
+      e.end.remove();
     });
+    this.entries.clear();
+
+    // Clear any stray nodes inside our range
+    let n = this.start.nextSibling;
+    while (n && n !== this.end) {
+      const next = n.nextSibling;
+      n.remove();
+      n = next;
+    }
+  }
+
+  update(items) {
+    const parent = this.end.parentNode;
+    if (!parent) return;
+
+    const nextKeys = new Set(items.map((i) => i.key));
+
+    // Remove vanished keys
+    Array.from(this.entries.entries())
+      .filter(([key]) => !nextKeys.has(key))
+      .forEach(([, entry]) => {
+        entry.part.dispose?.();
+        entry.start.remove();
+        entry.end.remove();
+        this.entries.delete(entry.key);
+      });
+
+    // Ensure entries exist + update their content
+    items.forEach(({ key, tpl }) => {
+      if (!this.entries.has(key)) {
+        const s = document.createComment(`gl:key:${key}:start`);
+        const e = document.createComment(`gl:key:${key}:end`);
+        parent.insertBefore(s, this.end);
+        parent.insertBefore(e, this.end);
+
+        const part = new NodePart(e, this.ctxEffect);
+        part.start = s; // reuse the keyed start marker
+        part.bind(() => tpl);
+
+        this.entries.set(key, { key, start: s, end: e, part });
+      } else {
+        const entry = this.entries.get(key);
+        entry.part.update(() => tpl);
+      }
+    });
+
+    // Reorder by moving each key range in order before this.end
+    items
+      .map(({ key }) => this.entries.get(key))
+      .forEach((entry) => {
+        const frag = document.createDocumentFragment();
+
+        // move [entry.start .. entry.end] inclusive
+        let n = entry.start;
+        while (n) {
+          const next = n.nextSibling;
+          frag.appendChild(n);
+          if (n === entry.end) break;
+          n = next;
+        }
+
+        parent.insertBefore(frag, this.end);
+      });
   }
 }
 
@@ -607,8 +734,6 @@ const lines = (...xs) => xs.filter(x => x != null);
 /**
  * Warnings emitted during development to help guide correct usage.
  */
-
-
 const MESSAGES = Object.freeze({
   SIGNAL_OUTSIDE_CONTAINER: {
     kind: 'warn',
@@ -910,7 +1035,7 @@ function normalizeStyleIntents(values) {
 }
 
 // Render %c-based console log arguments from framed fragments
-function render(fragments) {
+function renderConsoleFragments(fragments) {
   const { text, styles } = fragments.reduce(
     (acc, frag) => {
       if (!frag.styleHints) {
@@ -928,7 +1053,7 @@ function render(fragments) {
   return [text, ...styles]
 }
 
-function emit(code, payload) {
+function _emit(code, payload) {
   if (!__DEV__) return
 
   const msg = MESSAGES[code];
@@ -949,7 +1074,8 @@ function emit(code, payload) {
   const values = msg.format(payload, { chalky });
   const fragments = normalizeStyleIntents(values);
   const framed = frameFragments(fragments, chalky.dim('[glint] '));
-  const args = render(framed);
+  console.log({fragments})
+  const args = renderConsoleFragments(framed);
 
   console[msg.kind](...args);
 }
@@ -992,6 +1118,7 @@ class BaseComponent extends HTMLElement {
           }
         });
         this.effectsCleanupFns.push(stop);
+        return stop; // START FIX // END FIX
       },
       emit: this.emit.bind(this),
       onMount: (fn) => this.hooks.onMount.push(fn),
@@ -1049,7 +1176,7 @@ const define = (name, renderer, options = {}) => {
 
   const existing = customElements.get(name);
   if (existing) {
-    emit('COMPONENT_ALREADY_DEFINED', { name });
+    _emit('COMPONENT_ALREADY_DEFINED', { name });
     return existing;
   }
 
@@ -1101,7 +1228,7 @@ const mount = (target = document.body, template) => {
 
 const model = (factory) => {
   if (factory.length !== 0) {
-    emit('MODEL_FACTORY_HAS_PARAMS', {
+    _emit('MODEL_FACTORY_HAS_PARAMS', {
       name: factory.name,
       arity: factory.length,
     });
@@ -1115,7 +1242,7 @@ model.owned = (factory) => {
 
   return (ctx) => {
     if (!ctx) {
-      emit('MODEL_OWNED_WITHOUT_CONTEXT');
+      _emit('MODEL_OWNED_WITHOUT_CONTEXT');
     }
 
     const instance = create();
@@ -1169,8 +1296,36 @@ const makeTemplateHelper = (source, fn) =>
 // Public helpers
 // ------------------------------------------------------------
 
-const each = (source, renderFn) =>
-  makeTemplateHelper(source, (list) => list.map(renderFn));
+// const each = (source, renderFn) =>
+//   makeTemplateHelper(source, (list) => list.map(renderFn));
+
+const each = (source, keyOrRender, maybeRender) => {
+  // --------------------------------------------
+  // Unkeyed each — structural expansion only
+  // --------------------------------------------
+  if (maybeRender == null) {
+    const render = keyOrRender;
+
+    return makeTemplateHelper(source, (list) =>
+      list.map(render)
+    );
+  }
+
+  // --------------------------------------------
+  // Keyed each — identity-aware expansion
+  // --------------------------------------------
+  const keyFn = keyOrRender;
+  const render = maybeRender;
+
+  return makeTemplateHelper(source, (list) => ({
+    __glintEach: true,
+    keyed: true,
+    items: list.map((item) => ({
+      key: keyFn(item),
+      tpl: render(item),
+    })),
+  }));
+};
 
 const when = (cond, renderFn) =>
   makeTemplateHelper(cond, (val) => (val ? renderFn() : []));
@@ -1181,3 +1336,238 @@ const match = (source, cases) =>
   );
 
 export { createStateContainer, define, each, html, match, model, mount as render, when };
+
+// ============================================================
+// Task Board Model
+// ============================================================
+
+export const taskBoardModel = model(() => {
+  const state = createStateContainer();
+
+  // ----------------------------------------------------------
+  // State
+  // ----------------------------------------------------------
+
+  const tasks = state.signal([]);
+  const filter = state.signal('all'); // 'all' | 'active' | 'completed'
+  const nameFilter = state.signal('');
+  const newText = state.signal('');
+  const nextId = state.signal(1);
+
+  // ----------------------------------------------------------
+  // Derived
+  // ----------------------------------------------------------
+
+  const filtered = state.computed(() => {
+    const f = filter();
+    const nf = nameFilter().toLowerCase();
+
+    return tasks().filter((t) => {
+      const matchesStatus =
+        f === 'all'
+          ? true
+          : f === 'active'
+            ? !t.completed
+            : t.completed;
+
+      const matchesName =
+        nf === '' || t.text.toLowerCase().includes(nf);
+
+      return matchesStatus && matchesName;
+    });
+  });
+
+  const taskCount = state.computed(() => tasks().length);
+
+  // ----------------------------------------------------------
+  // Lifecycle / initialization
+  // ----------------------------------------------------------
+
+  function init(initialTasks = []) {
+    tasks(initialTasks);
+    nextId(initialTasks.length + 1);
+  }
+
+  // ----------------------------------------------------------
+  // Actions
+  // ----------------------------------------------------------
+
+  function addTask() {
+    const text = newText().trim();
+    if (!text) return;
+
+    const id = nextId();
+    tasks([...tasks(), { id, text, completed: false }]);
+    nextId(id + 1);
+    newText('');
+
+    return { id, text };
+  }
+
+  function toggleTask(id) {
+    tasks(
+      tasks().map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      )
+    );
+  }
+
+  function removeTask(id) {
+    tasks(tasks().filter((t) => t.id !== id));
+  }
+
+  return {
+    // lifecycle
+    init,
+
+    // state
+    tasks,
+    filter,
+    nameFilter,
+    newText,
+
+    // derived
+    filtered,
+    taskCount,
+
+    // actions
+    addTask,
+    toggleTask,
+    removeTask,
+  };
+});
+
+
+// ============================================================
+// <tsp-task-board> Component
+// ============================================================
+
+define('tsp-task-board', (ctx) => {
+  const { props, emit, onMount, onDestroy, effect } = ctx;
+
+  // ----------------------------------------------------------
+  // Model ownership
+  // ----------------------------------------------------------
+
+  const createTaskBoard = model.owned(taskBoardModel);
+  const board = createTaskBoard(ctx);
+
+  board.init(props.initialTasks ?? []);
+
+  // ----------------------------------------------------------
+  // Diagnostics
+  // ----------------------------------------------------------
+
+  onMount(() => {
+    console.log('[TaskBoard] mounted');
+  });
+
+  onDestroy(() => {
+    console.log('[TaskBoard] destroyed');
+  });
+
+  effect(() => {
+    console.log('Filter changed:', board.filter());
+  });
+
+  effect(() => {
+    console.log('Tasks updated:', board.taskCount());
+  });
+
+  // ----------------------------------------------------------
+  // Events
+  // ----------------------------------------------------------
+
+  function addTask() {
+    const result = board.addTask();
+    if (result) emit('added', result);
+  }
+
+  // ----------------------------------------------------------
+  // View
+  // ----------------------------------------------------------
+
+  return html`
+    <div class="taskboard" style="font-family: system-ui; padding: 0.5rem;">
+
+      <header style="margin-bottom: 1rem;">
+        <h2>${props.title ?? 'Tasks'}</h2>
+
+        <div style="display: flex; gap: 0.5rem; margin: 0.5rem 0;">
+          ${each(['all', 'active', 'completed'], (id) => id, (f) => html`
+            <button
+              onclick=${() => board.filter(f)}
+              style="
+                padding: 0.25rem 0.5rem;
+                background: ${board.filter() === f ? '#333' : '#eee'};
+                color: ${board.filter() === f ? 'white' : 'black'};
+                border: none;
+                border-radius: 3px;
+              "
+            >
+              ${f}
+            </button>
+          `)}
+        </div>
+
+        <input
+          :value=${board.nameFilter}
+          oninput=${(e) => board.nameFilter(e.target.value)}
+          placeholder="Filter by name..."
+          style="padding: 0.25rem 0.5rem; width: 100%;"
+        />
+      </header>
+
+      <section style="margin-bottom: 1rem;">
+        <input
+          :value=${board.newText}
+          oninput=${(e) => board.newText(e.target.value)}
+          placeholder="New task..."
+        />
+        <button onclick=${addTask} style="margin-left: 0.5rem;">
+          Add
+        </button>
+      </section>
+
+      <ul style="list-style: none; padding: 0; margin: 0;">
+        ${each(board.filtered, ({ id }) => id, (task) => html`
+            <li style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+              <label style="flex: 1; display: flex; gap: 0.5rem;">
+                <input
+                  type="checkbox"
+                  :checked=${task.completed}
+                  onchange=${() => board.toggleTask(task.id)}
+                />
+                <span style="text-decoration:${task.completed ? 'line-through' : 'none'};">
+                  ${task.text}
+                </span>
+              </label>
+
+              ${when(!task.completed, () => html`
+                <button
+                  onclick=${() => board.removeTask(task.id)}
+                  style="
+                    background: #c00;
+                    color: white;
+                    border: none;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 3px;
+                  "
+                >
+                  ✕
+                </button>
+              `)}
+            </li>
+          `
+        )}
+      </ul>
+
+      ${match(board.taskCount, {
+        0: () => html`<p>No tasks yet.</p>`,
+        default: () => html`<p>${board.taskCount} total tasks</p>`,
+      })}
+    </div>
+  `;
+});
+
+mount('#glint_app', html`<tsp-task-board></tsp-task-board>`)
