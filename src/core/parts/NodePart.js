@@ -2,7 +2,6 @@ import {
   isSignal,
   isComputed,
   isFunction,
-  isPrimitive,
   isTemplate,
 } from '../utils';
 
