@@ -11,7 +11,16 @@ import {
 define('tsp-task-board', (ctx) => {
   const { props, emit, onMount, onDestroy, effect } = ctx;
 
-  const board = taskBoardModel.owned(props.initialTasks ?? []);
+  // ----------------------------------------------------------
+  // Model ownership
+
+  const createTaskBoard = model.owned(taskBoardModel);
+  const board = createTaskBoard(ctx);
+
+  board.init(props.initialTasks ?? []);
+
+  // ----------------------------------------------------------
+  // Diagnostics
 
   onMount(() => {
     console.log('[TaskBoard] mounted');
@@ -29,10 +38,16 @@ define('tsp-task-board', (ctx) => {
     console.log('Tasks updated:', board.taskCount());
   });
 
+  // ----------------------------------------------------------
+  // Events
+
   function addTask() {
     const result = board.addTask();
     if (result) emit('added', result);
   }
+
+  // ----------------------------------------------------------
+  // View
 
   return html`
     <div class="taskboard" style="font-family: system-ui; padding: 0.5rem;">
@@ -41,22 +56,20 @@ define('tsp-task-board', (ctx) => {
         <h2>${props.title ?? 'Tasks'}</h2>
 
         <div style="display: flex; gap: 0.5rem; margin: 0.5rem 0;">
-          ${['all', 'active', 'completed'].map(
-            (f) => html`
-              <button
-                onclick=${() => board.filter(f)}
-                style="
-                  padding: 0.25rem 0.5rem;
-                  background: ${board.filter() === f ? '#333' : '#eee'};
-                  color: ${board.filter() === f ? 'white' : 'black'};
-                  border: none;
-                  border-radius: 3px;
-                "
-              >
-                ${f}
-              </button>
-            `
-          )}
+          ${each(['all', 'active', 'completed'], (id) => id, (f) => html`
+            <button
+              onclick=${() => board.filter(f)}
+              style="
+                padding: 0.25rem 0.5rem;
+                background: ${board.filter() === f ? '#333' : '#eee'};
+                color: ${board.filter() === f ? 'white' : 'black'};
+                border: none;
+                border-radius: 3px;
+              "
+            >
+              ${f}
+            </button>
+          `)}
         </div>
 
         <input
@@ -79,9 +92,7 @@ define('tsp-task-board', (ctx) => {
       </section>
 
       <ul style="list-style: none; padding: 0; margin: 0;">
-        ${each(
-          board.filtered,
-          (task) => html`
+        ${each(board.filtered, ({ id }) => id, (task) => html`
             <li style="display: flex; align-items: center; margin-bottom: 0.5rem;">
               <label style="flex: 1; display: flex; gap: 0.5rem;">
                 <input
@@ -115,29 +126,36 @@ define('tsp-task-board', (ctx) => {
 
       ${match(board.taskCount, {
         0: () => html`<p>No tasks yet.</p>`,
-        default: () => html`<p>${board.taskCount} total tasks</p>`
+        default: () => html`<p>${board.taskCount} total tasks</p>`,
       })}
     </div>
   `;
 });
 
-
-export const taskBoardModel = model((initialTasks = []) => {
+export const taskBoardModel = model(() => {
   const state = createStateContainer();
 
-  const tasks = state.signal(initialTasks);
+  // ----------------------------------------------------------
+  // State
+
+  const tasks = state.signal([]);
   const filter = state.signal('all'); // 'all' | 'active' | 'completed'
   const nameFilter = state.signal('');
   const newText = state.signal('');
   const nextId = state.signal(1);
+
+  // ----------------------------------------------------------
+  // Derived
 
   const filtered = state.computed(() => {
     const f = filter();
     const nf = nameFilter().toLowerCase();
 
     return tasks().filter((t) => {
-      const matchesStatus = f === 'all'
-          ? true : f === 'active'
+      const matchesStatus =
+        f === 'all'
+          ? true
+          : f === 'active'
             ? !t.completed
             : t.completed;
 
@@ -149,6 +167,17 @@ export const taskBoardModel = model((initialTasks = []) => {
   });
 
   const taskCount = state.computed(() => tasks().length);
+
+  // ----------------------------------------------------------
+  // Lifecycle / initialization
+
+  function init(initialTasks = []) {
+    tasks(initialTasks);
+    nextId(initialTasks.length + 1);
+  }
+
+  // ----------------------------------------------------------
+  // Actions
 
   function addTask() {
     const text = newText().trim();
@@ -175,6 +204,9 @@ export const taskBoardModel = model((initialTasks = []) => {
   }
 
   return {
+    // lifecycle
+    init,
+
     // state
     tasks,
     filter,
@@ -188,6 +220,6 @@ export const taskBoardModel = model((initialTasks = []) => {
     // actions
     addTask,
     toggleTask,
-    removeTask
+    removeTask,
   };
 });
