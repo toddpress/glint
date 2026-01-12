@@ -2,14 +2,17 @@
 // Glint Template Engine
 // ============================================================
 
-import { isString, isTemplate } from './utils.js';
-
 import {
   walkTextNodes,
   walkElementNodes,
   mapAttrs,
+} from './dom';
+
+import {
+  createMarker,
   extractMarkers,
-} from './internal.js';
+  markerPattern,
+} from './markers';
 
 import {
   NodePart,
@@ -18,6 +21,8 @@ import {
   EventPart,
   InterpolatedAttrPart,
 } from './parts';
+
+import { isString, isTemplate } from './utils';
 
 // ------------------------------------------------------------
 // Template tag
@@ -37,7 +42,7 @@ const templateCache = new WeakMap();
 
 const compileTemplate = (strings, valueCount) => {
   const htmlString = strings
-    .map((chunk, i) => chunk + (i < valueCount ? `__glint_${i}__` : ''))
+    .map((chunk, i) => chunk + (i < valueCount ? createMarker(i) : ''))
     .join('');
 
   const tpl = document.createElement('template');
@@ -67,7 +72,6 @@ export const renderTemplate = (tpl, ctxEffect) => {
   const compiled = getCompiled(strings, values.length);
   const fragment = compiled.fragment.cloneNode(true);
 
-  const markerPattern = /__glint_(\d+)__/g;
   const pendingNodeParts = [];
 
   // ----------------------------------------------------------

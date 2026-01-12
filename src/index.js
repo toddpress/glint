@@ -8,15 +8,15 @@
 
 
 // Core authoring primitives
+export { html, define, mount } from './core';
 
-export { html } from './template';
-export { define } from './component';
-export { render, createRoot } from './root';
 
 // Template helpers
+export { each, when, match } from './patterns';
 
-export { each, when, match } from './helpers';
-
+// State
+export { model } from './patterns/model';
+export { createStateContainer } from './core/signals';
 
 // Advanced signals usage
 
@@ -24,5 +24,4 @@ export { each, when, match } from './helpers';
 // ctx.state() inside components instead of importing signals
 // directly — but power users can opt in.
 
-// export { Signal } from './signal-core.js';
-// export { createStateAPI, wrap } from './signals.js';
+// export { Signal } from './core/signals';

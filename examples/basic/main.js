@@ -1,9 +1,17 @@
+import './components'
+
 import {
-  createRoot,
+  mount,
+  html,
 } from '../../src'
 
-// Import the App component
-import { App } from './App'
-
-// Bootstrap the app and render the App component
-createRoot('#glint-app', { autoRegister: true }).render(App)
+mount('#glint-app', html`
+    <section>
+        <h3>Signals, Computed, Effects</h3>
+        <tsp-counter start="5" />
+    </section>
+    <section>
+        <h3>TaskBoard:</h3>
+        <tsp-task-board />
+    </section>
+`);
