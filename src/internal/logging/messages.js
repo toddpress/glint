@@ -204,5 +204,65 @@ export const MESSAGES = Object.freeze({
         'This may be leftover scaffolding.'
       )
     }
-  }
+  },
+
+  VALIDITY_WITHOUT_FORM_VALUE: {
+    kind: 'warn',
+    category: 'element-internals',
+    summary: 'setValidity called before setFormValue',
+
+    format({ name }, { chalky }) {
+      return lines(
+        chalky.bold(this.summary),
+        '',
+        `In the form-associated custom element "${name}", setValidity was called before setFormValue.`,
+        'This may lead to unexpected behavior in some browsers.'
+      )
+    }
+  },
+
+  INTERNALS_WITHOUT_FORM_ASSOCIATION: {
+    kind: 'warn',
+    category: 'element-internals',
+    summary: 'attachInternals called on non-form-associated custom element',
+
+    format({ name }, { chalky }) {
+      return lines(
+        chalky.bold(this.summary),
+        '',
+        `The custom element "${name}" is not form-associated, but attachInternals was called.`,
+        'Element internals are only supported on form-associated custom elements.'
+      )
+    }
+  },
+
+  INTERNALS_UNUSED: {
+    kind: 'warn',
+    category: 'element-internals',
+    summary: 'ElementInternals created but never used',
+
+    format({ name }, { chalky }) {
+      return lines(
+        chalky.bold(this.summary),
+        '',
+        `The ElementInternals for the custom element "${name}" were created but never used.`,
+        'If internals are not needed, consider omitting attachInternals calls.'
+      )
+    }
+  },
+
+  INTERNALS_UNSUPPORTED: {
+    kind: 'warn',
+    category: 'element-internals',
+    summary: 'attachInternals called in unsupported environment',
+
+    format({ name }, { chalky }) {
+      return lines(
+        chalky.bold(this.summary),
+        '',
+        `The custom element "${name}" called attachInternals, but the environment does not support it.`,
+        'Element internals may not be available in all browsers.'
+      )
+    }
+  },
 })

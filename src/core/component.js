@@ -1,4 +1,7 @@
+import { __DEV__ } from '../internal/env';
 import { _emit } from '../internal/logging';
+import { createInternalsController } from '../internal/element-internals';
+
 import { createStateContainer, Signal } from './signals';
 import { renderTemplate } from './template';
 import { safeParse } from './utils';
@@ -20,7 +23,9 @@ export class BaseComponent extends HTMLElement {
   constructor() {
     super();
 
-    const { useShadow } = this.constructor.options;
+    const Component = this.constructor;
+
+    const { useShadow } = Component.options;
     this.#root = useShadow
       ? this.attachShadow({ mode: 'open' })
       : this;
@@ -28,11 +33,14 @@ export class BaseComponent extends HTMLElement {
     this.props = this._collectProps();
     this.state = createStateContainer();
 
+    const internals = createInternalsController(this, Component);
+
     this.ctx = {
       el: this,
       root: this.#root,
       props: this.props,
       state: this.state,
+      internals: internals.get,
       effect: (fn) => {
         const stop = Signal.effect(() => {
           const cleanup = fn();
@@ -41,11 +49,16 @@ export class BaseComponent extends HTMLElement {
           }
         });
         this.effectsCleanupFns.push(stop);
+        return stop;
       },
       emit: this.emit.bind(this),
       onMount: (fn) => this.hooks.onMount.push(fn),
       onDestroy: (fn) => this.hooks.onDestroy.push(fn),
     };
+
+    if (__DEV__) {
+      queueMicrotask(internals.audit);
+    }
   }
 
   connectedCallback() {
@@ -91,9 +104,14 @@ export class BaseComponent extends HTMLElement {
 }
 
 export const define = (name, renderer, options = {}) => {
+  const {
+    formAssociated = false,
+    ...componentOptions
+  } = options;
+
   const mergedOptions = {
     ...BaseComponent.options,
-    ...options,
+    ...componentOptions,
   };
 
   const existing = customElements.get(name);
@@ -108,6 +126,7 @@ export const define = (name, renderer, options = {}) => {
       class extends BaseComponent {
         static renderer = renderer;
         static options = mergedOptions;
+        static formAssociated = formAssociated;
       }
     );
   } catch (err) {
