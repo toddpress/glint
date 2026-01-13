@@ -7,7 +7,7 @@ export function createInternalsController(host, Component) {
   let didSetFormValue = false;
   let didSetValidity = false;
 
-  const name = Component.is || Component.name;
+  const name = Component.is ?? Component.name;
 
   function attach() {
     internals = host.attachInternals();
