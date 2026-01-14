@@ -1,6 +1,6 @@
 # Glint ⚡
 
-*`glintjs` is a small system for thinking clearly about UI — and an ergonomic way to author Web Components without fighting the platform.*
+*`glint` is a small system for thinking clearly about UI — and an ergonomic way to author Web Components without fighting the platform.*
 
 Glint is a small, signal-driven runtime for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with no build step, no virtual DOM, and no interest in running your application for you.
 
@@ -29,9 +29,12 @@ It’s both:
 
 ## A taste
 
+<!--
 ```js
-import { define, html } from 'glintjs';
-
+import { define, html } from '@toddpress/glint';
+```
+-->
+```js
 define('my-counter', (ctx) => {
   const { state } = ctx;
   const count = state.signal(0);
@@ -60,9 +63,12 @@ No framework hoping you don’t notice what it’s doing.<br>
 
 If you hate cramming all stateful logic into the component definition like me, let it breathe a bit with a model:
 
+<!--
 ```js
-import { define, html, model, createStateContainer } from 'glintjs';
-
+import { define, html, model, createStateContainer } from '@toddpress/glint';
+```
+-->
+```js
 const counterModel = model.owned(() => {
   const state = createStateContainer();
 
@@ -128,11 +134,29 @@ They don’t pretend to be values.<br>
 If something matters over time, it gets a signal.
 If it doesn’t, it probably shouldn’t.
 
-Control flow is just functions:
+Control flow is just functions: `each`, `when`, and `match`.
+
+
+### `each(list, keyFn, templateFn)`
 
 ```js
-${each(items, item => html`<li>${item}</li>`)}
-${when(loading, () => html`<p>Loading…</p>`)}
+${each(items(), (item) => item, item => html`<li>${item}</li>`)}
+```
+
+### `when(condition, templateFn)`
+
+```js
+${when(loading(), () => html`<p>Loading…</p>`)}
+```
+
+### `match(value, cases)`
+
+```js
+${match(status(), {
+  success: () => html`<p>Success!</p>`,
+  error: () => html`<p>Error!</p>`,
+  default: () => html`<p>Unknown status</p>`
+})}
 ```
 
 No new syntax.<br>
@@ -157,9 +181,11 @@ A model is a small unit of **stateful behavior** that:
 - exposes actions and derived values
 - has no idea what the DOM looks like
 
+<!--
 ```js
-import { model, createStateContainer } from 'glintjs';
-
+import { model, createStateContainer } from '@toddpress/glint';
+-->
+```js
 const formModel = model.owned(() => {
   const state = createStateContainer();
 
@@ -222,8 +248,12 @@ No re-invocation cycle.<br>
 No framework-managed sense of “now we update (we think)”<br>
 
 The `mount` convenience utility places DOM into the world — once — and steps aside.
+
+<!--
 ```js
-import { mount, html } from 'glintjs';
+import { mount, html } from '@toddpress/glint';
+-->
+```js
 
 mount('#app', html`
   <h1>Hello</h1>
