@@ -8,6 +8,7 @@
 // ============================================================
 
 import { isSignal, isComputed } from '../core/utils.js';
+import { KeyedEachPart } from '../core/parts/KeyedEachPart';
 
 // ------------------------------------------------------------
 // Helper core utilities
@@ -23,33 +24,6 @@ const makeTemplateHelper = (source, fn) =>
 // Public helpers
 // ------------------------------------------------------------
 
-export const each = (source, keyOrRender, maybeRender) => {
-  // --------------------------------------------
-  // Unkeyed each — structural expansion only
-  if (maybeRender == null) {
-    const render = keyOrRender;
-
-    return makeTemplateHelper(source, (list) =>
-      list.map(render)
-    );
-  }
-
-  // --------------------------------------------
-  // Keyed each — identity-aware expansion
-  const keyFn = keyOrRender;
-  const render = maybeRender;
-
-  return makeTemplateHelper(source, (list) => ({
-    __glintEach: true,
-    keyed: true,
-    items: list.map((item) => ({
-      key: keyFn(item),
-      tpl: render(item),
-    })),
-  }));
-};
-
-
 export const when = (cond, renderFn) =>
   makeTemplateHelper(cond, (val) => (val ? renderFn() : []));
 
@@ -58,64 +32,27 @@ export const match = (source, cases) =>
     val in cases ? cases[val]() : cases.default?.() ?? []
   );
 
-function _each(list, keyFn, template) {
+export function each(list, keyFn, template) {
   return (ctx) => {
-    const parentScope = ctx.effectScope;
-    const records = new Map();
+    let part = null;
 
     ctx.effect(() => {
       const items = list();
-      const seenKeys = new Set();
+      const keyed = items.map((item, index) => ({
+        key: keyFn ? keyFn(item, index) : index,
+        tpl: template(item),
+      }));
 
-      items.forEach((item, index) => {
-        const key = keyFn ? keyFn(item, index) : index;
-        seenKeys.add(key);
+      if (!part) {
+        part = new KeyedEachPart(ctx.part.start, ctx.part.end, ctx.effect);
+        ctx.part.addChild(part);
+      }
 
-        const record = records.get(key) ?? createRecord(key, item);
-        positionRecord(record, index);
-      });
-
-      records.forEach((record, key) => {
-        if (!seenKeys.has(key)) {
-          disposeRecord(key, record);
-        }
-      });
+      part.update(keyed);
     });
-
-    // ---------- local helpers ----------
-
-    function createRecord(key, item) {
-      const scope = parentScope.fork();
-      let nodes = null;
-
-      withEffectScope(
-        ctx,
-        notify => notify(true),
-        scopedCtx => {
-          nodes = render(template(item), {
-            ...scopedCtx,
-            effect: scope.effect,
-            effectScope: scope,
-          });
-        }
-      );
-
-      const record = { scope, nodes };
-      records.set(key, record);
-      return record;
-    }
-
-    function positionRecord(record, index) {
-      moveNodes(record.nodes, index);
-    }
-
-    function disposeRecord(key, record) {
-      record.scope.dispose();
-      removeNodes(record.nodes);
-      records.delete(key);
-    }
   };
 }
+
 
 function _when(condition, template) {
   return (ctx) => {
