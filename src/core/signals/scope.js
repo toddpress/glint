@@ -34,7 +34,9 @@ export function createEffectScope() {
   };
 }
 
-// @Deprecated - prefer `Part` + `scope` ownership going forward
+/**
+* @Deprecated - prefer `Part` + `scope` ownership going forward
+*/
 export function withEffectScope(ctx, subscribe, render) {
   let scope = null;
   let mounted = false;
