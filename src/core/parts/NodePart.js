@@ -3,10 +3,12 @@ import {
   isComputed,
   isFunction,
   isTemplate,
+  isAbsentOrFalse,
 } from '../utils';
 
 import { unwrapOne, Signal } from '../signals';
 import { expandTemplate, realizeBindings } from '../template';
+
 import { RangePart } from './base/RangePart';
 
 export class NodePart extends RangePart {
@@ -28,7 +30,7 @@ export class NodePart extends RangePart {
   update(getter) {
     const value = normalize(getter);
 
-    if (value === null || value === undefined || value === false) {
+    if (isAbsentOrFalse(value)) {
       this.clearRange();
       return;
     }

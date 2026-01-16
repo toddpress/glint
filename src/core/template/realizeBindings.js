@@ -57,9 +57,9 @@ export function realizeBindings(parentPart, bindingSites, ctx) {
       }
 
       default:
-        throw new Error(`Unknown binding site kind: ${site.kind}`);
+        throw new Error(`Unknown binding site kind: ${site.kind ?? 'Beats me.'}`);
     }
 
-    parentPart.addChild(part);
+    parentPart.addOwnedPart(part);
   });
 }

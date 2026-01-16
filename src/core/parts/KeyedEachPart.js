@@ -1,10 +1,10 @@
 import { RangePart } from './base/RangePart';
 
 export class KeyedEachPart extends RangePart {
-  constructor(start, end, ctxEffect) {
+  constructor(start, end, parentScope) {
     super(end);
     this.start = start;
-    this.ctxEffect = ctxEffect;
+    this.parentScope = parentScope;
     this.records = new Map();
   }
 
@@ -63,8 +63,8 @@ export class KeyedEachPart extends RangePart {
     parent.insertBefore(start, this.end);
     parent.insertBefore(end, this.end);
 
-    const part = this.addChild(
-      new NodePart(end, this.ctxEffect)
+    const part = this.addOwnedPart(
+      new NodePart(end, this.parentScope)
     );
     part.start = start;
 

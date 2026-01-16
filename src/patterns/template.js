@@ -45,7 +45,7 @@ export function each(list, keyFn, template) {
 
       if (!part) {
         part = new KeyedEachPart(ctx.part.start, ctx.part.end, ctx.effect);
-        ctx.part.addChild(part);
+        ctx.part.addOwnedPart(part);
       }
 
       part.update(keyed);

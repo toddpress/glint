@@ -5,24 +5,24 @@ export class Part {
 
   constructor(parentScope = null) {
     this.scope = parentScope ? parentScope.fork() : createEffectScope();
-    this.children = new Set();
+    this.ownedParts = new Set();
   }
 
-  addChild(part) {
-    this.children.add(part);
+  addOwnedPart(part) {
+    this.ownedParts.add(part);
     return part;
   }
 
-  removeChild(part) {
-    this.children.delete(part);
+  removeOwnedPart(part) {
+    this.ownedParts.delete(part);
   }
 
   dispose() {
     if (this.#disposed) return;
     this.#disposed = true;
 
-    this.children.forEach(child => child.dispose());
-    this.children.clear();
+    this.ownedParts.forEach(part => part.dispose());
+    this.ownedParts.clear();
 
     this.scope.dispose();
   }

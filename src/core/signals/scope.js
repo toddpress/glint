@@ -1,17 +1,18 @@
+import { isFunction } from "../utils";
 
 export function createEffectScope() {
   const effects = new Set();
-  const children = new Set();
+  const ownedScopes = new Set();
 
   function effect(fn) {
     const cleanup = fn();
-    if (typeof cleanup === 'function') effects.add(cleanup);
+    if (isFunction(cleanup)) effects.add(cleanup);
   }
 
   function fork() {
-    const child = createEffectScope();
-    children.add(child);
-    return child;
+    const scope = createEffectScope();
+    ownedScopes.add(scope);
+    return scope;
   }
 
   function disposeEffects() {
@@ -20,8 +21,8 @@ export function createEffectScope() {
   }
 
   function dispose() {
-    children.forEach(child => child.dispose());
-    children.clear();
+    ownedScopes.forEach(scope => scope.dispose());
+    ownedScopes.clear();
     disposeEffects();
   }
 
@@ -49,11 +50,10 @@ export function withEffectScope(ctx, subscribe, render) {
     }
 
     if (!mounted) {
-      scope = ctx.effectScope.fork();
+      scope = ctx.scope.fork();
       render({
         ...ctx,
-        effect: scope.effect,
-        effectScope: scope,
+        scope,
       });
       mounted = true;
     }
