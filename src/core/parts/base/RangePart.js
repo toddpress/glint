@@ -1,17 +1,17 @@
 import { Part } from './Part'
 
 export class RangePart extends Part {
-  constructor(endMarker) {
-    super();
+  constructor(endMarker, parentScope) {
+    super(parentScope);
     this.end = endMarker;
     this.start = null;
   }
 
   ensureRange() {
-    if (!this.start) {
-      this.start = document.createComment('gl:part');
-      this.end.parentNode?.insertBefore(this.start, this.end);
-    }
+    if (!this.start) return;
+
+    this.start = document.createComment('gl:part');
+    this.end.parentNode?.insertBefore(this.start, this.end);
   }
 
   clearRange() {
@@ -31,6 +31,7 @@ export class RangePart extends Part {
 
   dispose() {
     super.dispose();
+
     this.clearRange();
     this.start?.remove();
     this.start = null;

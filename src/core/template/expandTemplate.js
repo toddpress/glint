@@ -1,7 +1,3 @@
-// ============================================================
-// Glint Template Engine
-// ============================================================
-
 import {
   walkTextNodes,
   walkElementNodes,
@@ -14,14 +10,6 @@ import {
   markerPattern,
 } from './markers';
 
-import {
-  NodePart,
-  AttrPart,
-  PropPart,
-  EventPart,
-  InterpolatedAttrPart,
-} from './parts';
-
 import { isString, isTemplate } from './utils';
 
 // ------------------------------------------------------------
@@ -29,7 +17,7 @@ import { isString, isTemplate } from './utils';
 // ------------------------------------------------------------
 
 export const html = (strings, ...exprs) => {
-  // Store expressions as getters so they can be re-evaluated in effects
+  // Store expressions as getters so they can be re-evaluated later (by Parts).
   const values = exprs.map((expr) => () => expr);
   return { __template: true, strings, values };
 };
@@ -60,22 +48,33 @@ const getCompiled = (strings, valueCount) => {
 };
 
 // ------------------------------------------------------------
-// renderTemplate
+// expandTemplate (responsibilities -- DOM + discovery only)
 // ------------------------------------------------------------
 
-export const renderTemplate = (tpl, ctxEffect) => {
+/**
+ * BindingSite shapes (intentionally boring and factual):
+ *
+ * - { kind: 'node', marker: Comment, getter: () => any }
+ * - { kind: 'prop', el: Element, name: string, getter: () => any }
+ * - { kind: 'event', el: Element, name: string, getter: () => any }
+ * - { kind: 'attr', el: Element, name: string, getter: () => any }
+ * - { kind: 'attr_interpolated', el: Element, name: string, segments: Array<string | (() => any)> }
+ *
+ * No Parts. No effects. No ownership.
+ */
+export const expandTemplate = (tpl) => {
   if (!isTemplate(tpl)) {
-    throw new Error('renderTemplate expected a template.');
+    throw new Error('expandTemplate expected a template.');
   }
 
   const { strings, values } = tpl;
   const compiled = getCompiled(strings, values.length);
   const fragment = compiled.fragment.cloneNode(true);
 
-  const pendingNodeParts = [];
+  const bindingSites = [];
 
   // ----------------------------------------------------------
-  // TEXT PARTS
+  // TEXT / NODE BINDINGS
   // ----------------------------------------------------------
   walkTextNodes(fragment).forEach((textNode) => {
     const raw = textNode.nodeValue;
@@ -94,10 +93,12 @@ export const renderTemplate = (tpl, ctxEffect) => {
       const pre = raw.slice(lastIndex, start);
       if (pre) newNodes.push(document.createTextNode(pre));
 
+      // Anchor for a NodePart to own a range ending at this marker.
       const comment = document.createComment(`gl:${index}`);
       newNodes.push(comment);
 
-      pendingNodeParts.push({
+      bindingSites.push({
+        kind: 'node',
         marker: comment,
         getter: values[index],
       });
@@ -112,14 +113,8 @@ export const renderTemplate = (tpl, ctxEffect) => {
     textNode.remove();
   });
 
-  // Bind NodeParts after anchors exist
-  pendingNodeParts.forEach(({ marker, getter }) => {
-    const part = new NodePart(marker, ctxEffect);
-    part.bind(getter);
-  });
-
   // ----------------------------------------------------------
-  // ATTRIBUTE / PROP / EVENT PARTS
+  // ATTRIBUTE / PROP / EVENT BINDINGS
   // ----------------------------------------------------------
   walkElementNodes(fragment).forEach((el) => {
     mapAttrs(el).forEach(({ name: rawName, value: rawValue }) => {
@@ -132,12 +127,18 @@ export const renderTemplate = (tpl, ctxEffect) => {
       // Property binding: :value
       // ----------------------------
       if (rawName.startsWith(':')) {
-        const getter = values[markers[0].index];
         const propName = rawName.slice(1);
+        const getter = values[markers[0].index];
+
         el.removeAttribute(rawName);
 
-        const part = new PropPart(el, propName, ctxEffect);
-        part.bind(getter);
+        bindingSites.push({
+          kind: 'prop',
+          el,
+          name: propName,
+          getter,
+        });
+
         return;
       }
 
@@ -145,12 +146,18 @@ export const renderTemplate = (tpl, ctxEffect) => {
       // Event binding: onclick
       // ----------------------------
       if (rawName.startsWith('on')) {
-        const getter = values[markers[0].index];
         const eventName = rawName.slice(2);
+        const getter = values[markers[0].index];
+
         el.removeAttribute(rawName);
 
-        const part = new EventPart(el, eventName, ctxEffect);
-        part.bind(getter);
+        bindingSites.push({
+          kind: 'event',
+          el,
+          name: eventName,
+          getter,
+        });
+
         return;
       }
 
@@ -177,21 +184,25 @@ export const renderTemplate = (tpl, ctxEffect) => {
       const tail = rawValue.slice(last.start + last.full.length);
       if (tail) segments.push(tail);
 
-      // Full dynamic attribute
+      // Full dynamic attribute: attr="${expr}"
+      // (single dynamic segment, no static text around it)
       if (segments.length === 1 && !isString(segments[0])) {
-        const part = new AttrPart(el, rawName, ctxEffect);
-        part.bind(segments[0]);
-      } else {
-        const part = new InterpolatedAttrPart(
+        bindingSites.push({
+          kind: 'attr',
           el,
-          rawName,
+          name: rawName,
+          getter: segments[0],
+        });
+      } else {
+        bindingSites.push({
+          kind: 'attr_interpolated',
+          el,
+          name: rawName,
           segments,
-          ctxEffect
-        );
-        part.bind();
+        });
       }
     });
   });
 
-  return fragment;
+  return { fragment, bindingSites };
 };

@@ -6,70 +6,64 @@ import {
 } from '../utils';
 
 import { unwrapOne, Signal } from '../signals';
-import { renderTemplate } from '../template';
+import { expandTemplate, realizeBindings } from '../template';
 import { RangePart } from './base/RangePart';
 
 export class NodePart extends RangePart {
-  constructor(endMarker, ctxEffect) {
-    super(endMarker);
-    this.ctxEffect = ctxEffect;
-    this.effectStop = null;
-    this.child = null;
+  constructor(endMarker, parentScope) {
+    super(endMarker, parentScope);
   }
 
   bind(getter) {
     this.ensureRange();
 
-    this.effectStop?.();
-    this.effectStop = this.ctxEffect(() => {
+    // Reset reactive work for this part only
+    this.scope.disposeEffects();
+
+    this.scope.effect(() => {
       Signal.batch(() => this.update(getter));
     });
-  }
-
-  dispose() {
-    this.effectStop?.();
-    this.effectStop = null;
-
-    this.child?.dispose();
-    this.child = null;
-
-    super.dispose();
   }
 
   update(getter) {
     const value = normalize(getter);
 
     if (value === null || value === undefined || value === false) {
-      this.#reset();
+      this.clearRange();
       return;
     }
 
-    this.#reset();
-    this.#render(value);
-  }
-
-  #reset() {
-    this.child?.dispose();
-    this.child = null;
     this.clearRange();
+    this.#renderValue(value);
   }
 
-  #render(val) {
+  #renderValue(val) {
+    // ---- template expansion
     if (isTemplate(val)) {
-      this.insert(renderTemplate(val, this.ctxEffect));
+      const { fragment, bindingSites } = expandTemplate(val);
+      this.insert(fragment);
+
+      realizeBindings(this, bindingSites, {
+        scope: this.scope,
+      });
+
       return;
     }
 
+    // ---- recursive flattening
     if (Array.isArray(val)) {
-      val.forEach(v => this.#render(v));
+      val.forEach(v => this.#renderValue(v));
+
       return;
     }
 
+    // ---- primitive fallback
     this.insert(document.createTextNode(String(val)));
   }
 }
 
 function normalize(v) {
-  v = unwrapOne(isFunction(v) && !isSignal(v) && !isComputed(v) ? v() : v);
-  return v;
+  return unwrapOne(
+    isFunction(v) && !isSignal(v) && !isComputed(v) ? v() : v
+  );
 }
