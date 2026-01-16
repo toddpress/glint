@@ -1,6 +1,7 @@
-# ✅ Glint Part Lifecycle Migration Checklist (Authoritative)
+# ✅ Glint Part Lifecycle Migration Checklist
 
-SEE [ChatGPT THREAD](https://chatgpt.com/g/g-p-68256a387df08191a878c0ec678d2154-glint/c/6969a405-52c8-832e-84c5-8974746b9a0c) FOR FULL CONTEXT
+- SEE [LIFECYCLE_TODO_SCRIPT.md](./LIFECYCLE_TODO_SCRIPT.md) FOR ANNOTATED VERSION
+- SEE [ChatGPT THREAD](https://chatgpt.com/g/g-p-68256a387df08191a878c0ec678d2154-glint/c/6969a405-52c8-832e-84c5-8974746b9a0c) FOR FULL CONTEXT
 
 ## Questions
 - [What instantiates the RootPart? How many are there?](https://chatgpt.com/g/g-p-68256a387df08191a878c0ec678d2154-glint/c/6969a405-52c8-832e-84c5-8974746b9a0c#:~:text=holds%20onto%20the%20RootPart)
@@ -12,6 +13,7 @@ SEE [ChatGPT THREAD](https://chatgpt.com/g/g-p-68256a387df08191a878c0ec678d2154-
   - Are they the same thing?
   - If not, which is the most correct to use?
 - [Prompt: `Create a dictionary of terms to be used in glint's Part. Include defs, examples, and synonyms where applicable.`](https://chatgpt.com/)
+- [Why `this.ownedParts = [];` instead of `this.ownedParts = new Set();`?](https://chatgpt.com/g/g-p-68256a387df08191a878c0ec678d2154-glint/c/6969a405-52c8-832e-84c5-8974746b9a0c#:~:text=initializes%20this.ownedParts%20%3D%20%5B%5D)
 -
 
 - How to handle custom elements that may be connected/disconnected multiple times?
