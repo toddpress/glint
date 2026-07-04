@@ -1,6 +1,10 @@
 # Glint ⚡
 
-*`glintjs` is a small system for thinking clearly about UI — and an ergonomic way to author Web Components without fighting the platform.*
+---
+**NOTE**: this readme and the code are currently stale... 😅 See [the site](https://glint.surge.sh) for up to date docs. And if you're looking to dirty your hands with the latest, check out the [Codepen](https://codepen.io/toddpress/pen/GgrOgwe?editors=1010). Please feel free to file issues you find here on github
+---
+
+*`glint` is a small system for thinking clearly about UI — and an ergonomic way to author Web Components without fighting the platform.*
 
 Glint is a small, signal-driven runtime for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with no build step, no virtual DOM, and no interest in running your application for you.
 
