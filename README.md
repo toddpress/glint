@@ -1,298 +1,118 @@
 # Glint ⚡
 
----
-**NOTE**: this readme and the code are currently stale... 😅 See [the site](https://glint.surge.sh) for up to date docs. And if you're looking to dirty your hands with the latest, check out the [Codepen](https://codepen.io/toddpress/pen/GgrOgwe?editors=1010). Please feel free to file issues you find here on github
----
+Glint is a small, signal-powered library for native Web Components. It uses real HTML templates and fine-grained bindings, with Preact Signals as its only runtime dependency.
 
-*`glint` is a small system for thinking clearly about UI — and an ergonomic way to author Web Components without fighting the platform.*
+## Development
 
-Glint is a small, signal-driven runtime for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with no build step, no virtual DOM, and no interest in running your application for you.
+Use Node 20 or newer and Python 3 for the static example server.
 
-It exists to make Web Components **sane to write** without abstracting them away.
+```sh
+npm ci
+npm test
+npm run check
+npm run build
+npm run build:codepen
+npm start
+```
 
-It doesn’t try to be clever.<br>
-It tries to be legible.<br>
+The example is at `/examples/basic/index.html` on the static server. Its import map loads the installed Preact dependency locally. `npm run test:browser` exercises the example and library in an installed Chromium browser; set `CHROMIUM_PATH` if it is not `/usr/bin/chromium`. The test uses Playwright Core and does not download a browser. `npm run check` checks JavaScript syntax; there is no configured lint tool or type checker.
 
----
+`dist/glint.js` is a self-contained ESM bundle. `dist/glint.codepen.js` also assigns the API to `window.Glint` for demonstrations. Normal library imports do not create globals. Package imports resolve to native ESM source; `@toddpress/glint/signals` and `@toddpress/glint/diagnostics` provide focused entry points. Node can import signals without a DOM, but rendering requires a browser document.
 
-## Why Glint?
-
-**Most UI complexity is accidental — and most bugs are identity bugs.**
-
-Glint exists to explore a simpler question:
-
-> *What does UI look like when identity is explicit and change is localized?*
-
-Web Components already give us strong primitives — Custom Elements, real DOM, real lifecycle — but the authoring experience is... hostile, if we're being honest. Glint stays close to the platform while smoothing over the sharp edges, so you can still tell what owns what.
-
-It’s both:
-- a practical way to write **ergonomic Web Components**, and
-- a *thinking tool* for reasoning about UI systems.
-
----
-
-## A taste
+## Components and reactivity
 
 ```js
-import { define, html } from 'glintjs';
+import { define, html } from '@toddpress/glint';
 
-define('my-counter', (ctx) => {
-  const { state } = ctx;
-  const count = state.signal(0);
-  const doubled = state.computed(() => count() * 2);
-
-  const increment = () => count(count() + 1);
-
-  ctx.view(() => html`
-    <button onclick=${increment}>
-      Count: ${count()} (x2 = ${doubled()})
+define('my-counter', ctx => {
+  const count = ctx.state.signal(0);
+  const doubled = ctx.state.computed(() => count() * 2);
+  ctx.connected(() => console.log('connected'));
+  ctx.disconnected(() => console.log('disconnected'));
+  return html`
+    <button @click=${() => count(count() + 1)}>
+      ${count} (double: ${doubled})
     </button>
-  `);
+  `;
 });
 ```
 
-That’s the whole thing.
+Signals are callable getters/setters. `signal`, `computed`, `effect`, `batch`, `peek`, `isSignal`, and `isComputed` are also available at the package root. Computeds are lazy and read-only; writing throws. Effects run immediately, return a callable disposer with `.dispose()`, and run returned cleanup before a rerun and at disposal. `batch` coalesces writes. `peek(signal)` reads without subscribing.
 
-When `count` changes, **only the DOM nodes that depend on it update**.
-Nothing else recomputes “just to be safe.”
-
-There’s no render loop pacing the room.<br>
-No lifecycle choreography to memorize.<br>
-No framework hoping you don’t notice what it’s doing.<br>
-
-**Or…**
-
-If you hate cramming all stateful logic into the component definition like me, let it breathe a bit with a model:
+`createStateContainer()` owns computed values, effects, and registered cleanup:
 
 ```js
-import { define, html, model, createStateContainer } from 'glintjs';
-
-const counterModel = model.owned(() => {
-  const state = createStateContainer();
-
-  const count = state.signal(0);
-  const doubled = state.computed(() => count() * 2);
-
-  function increment() {
-    count(count() + 1);
-  }
-
-  return { count, doubled, increment };
+const state = createStateContainer();
+const count = state.signal(0);
+state.effect(() => {
+  console.log(count());
+  return () => console.log('cleanup');
 });
-
-define('my-counter', (ctx) => {
-  const { count, doubled, increment } = counterModel(ctx);
-
-  ctx.view(() => html`
-    <button onclick=${increment}>
-      Count: ${count()} (x2 = ${doubled()})
-    </button>
-  `);
-});
+state.own(() => releaseExternalResource());
+state.dispose();
 ```
 
-Same Web Components.
-Less friction.
+The former callable shape API is retained: `state({ count: 0, doubled: s => s.count() * 2 })`. State disposal is idempotent. Effects registered after disposal do not execute; cleanup registered late executes immediately. Disposed computeds retain their last evaluated value (or `undefined` if never evaluated), without evaluating new work during cleanup. Signals themselves remain ordinary writable values.
 
----
+A signal read such as `${count()}` is a static snapshot. Use `${count}`, `${() => count() * 2}`, or a computed for reactive output. `configure({ diagnostics: true })` enables construction-read and template warnings; `peek` marks intentional snapshots. `getConfig()` returns a copy. Diagnostics are off by default.
 
-## How it works (briefly)
+## Template bindings
 
-Glint components are real Custom Elements.
-
-There’s no virtual tree keeping notes.<br>
-No reconciliation step deciding what *should* exist.<br>
-The browser already knows how to manage the DOM — that’s its job. Glint doesn’t argue with it.<br>
-
-Templates are just HTML:
+`html`, `svg`, and `mathml` return `TemplateResult` objects. SVG and MathML tags preserve their namespaces when nested in HTML. Templates with the same literal strings and kind update bindings in place.
 
 ```js
+const input = ctx.ref();
 html`
-  <h2>${title}</h2>
-  <p>${description}</p>
-`
+  <input ${input} .value=${text} ?disabled=${busy}
+    @input=${event => text(event.target.value)}>
+  <span title="Value: ${text}">${text}</span>
+`;
 ```
 
-Expressions can be signals, functions, arrays, or nested templates.<br>
-Dependencies are wired once. Then Glint steps aside.<br>
+- `${value}` accepts primitives, signals, getter functions, templates, DOM nodes, arrays, iterables, and structural helpers. `null`, `undefined`, and `false` produce no visible text. Plain objects are omitted with an optional diagnostic.
+- `name=${value}` binds an attribute. Null/false remove it; true sets an empty attribute. Quoted interpolation such as `class="row ${status}"` is supported.
+- `?name=${value}` binds a boolean attribute.
+- `.name=${value}` binds a property, preserving camelCase. The existing `:name` syntax is also supported.
+- `@event=${handler}` binds a listener without invoking it during rendering. The existing `onclick` style is supported. Handlers can be functions, listener objects, or signals containing either.
+- `${ref()}` inside an opening element assigns `.current`; removal/disposal clears it. `ctx.ref()` is an alias.
+- Root `key=${identity}` attributes in array child templates identify rows and are not rendered as attributes.
 
-**Signals are identity**:
+Dynamic tag names, dynamic attribute names, spread bindings, and interpolation inside inert `<template>` contents are unsupported. Event, property, and boolean bindings require a single expression. Treat template literal markup as trusted application code; interpolated text is inserted as text, not HTML.
+
+## Lists and branches
 
 ```js
-const count = ctx.state.signal(0);
-
-count();    // read
-count(10);  // write
+html`<ul>${each(tasks, task => task.id, (task, index) => html`
+  <li>${index}: ${() => task().title}</li>
+`)}</ul>`;
 ```
 
-They’re stable references.<br>
-They don’t move.<br>
-They don’t pretend to be values.<br>
+`each` passes **item and index signals** to the view. A row is constructed once per key, and those signals update when its item or position changes. This keeps input state and child component identity through reordering and immutable item replacement. Use explicit keys for objects; unique primitives can be implicit keys. Duplicate keys throw before mutating the list. Keys retain their original identity (`1` and `'1'` are distinct). `each.value(...)` retains the repository's previous raw-item/raw-index callback form, with in-place template updates when possible.
 
-If something matters over time, it gets a signal.
-If it doesn’t, it probably shouldn’t.
+Array expressions flatten nested arrays/iterables. A child template's root `key` provides identity; missing keys use positional ownership. Changing template literal shape replaces that row's content. Removing rows disposes their bindings.
 
-Control flow is just functions:
+`when(condition, yes, no)` retains its branch while the truth value is unchanged. `match(value, cases)` selects own case entries; `_` is the reference fallback and `default` remains supported. Branches accept templates, primitives, arrays, and other mountable values. Branch changes dispose old resources. Wrap reads inside branch views in functions or computed signals when they must remain reactive.
 
-```js
-${each(items, item => html`<li>${item}</li>`)}
-${when(loading, () => html`<p>Loading…</p>`)}
-```
+## Component lifecycle and props
 
-No new syntax.<br>
-No special rules.<br>
-Just JavaScript, doing what it already does.
+`define` uses light DOM by default. Shadow DOM is an explicit opt-in through `define.shadow(...)`. `define.light(...)` is a light DOM alias. Definitions may be functions returning a view, or `{ setup(ctx), view(ctx, local) }` objects.
 
----
+`ctx.props` reads current attributes reactively when accessed inside effects or binding getters. Dashed and camelCase names are both available. Empty attributes become true; boolean, numeric, and JSON values are parsed. Destructuring `const { props } = ctx` captures a snapshot; use `() => ctx.props.title` for changes. Attribute updates propagate through MutationObserver, asynchronously.
 
-## Models (optional, but handy)
+`ctx.effect`, `ctx.state`, and `ctx.own` attach resources to the component. `connected`/`disconnected` hooks retain `onMount`/`onDestroy` aliases. `element`/`el`, `root`, and `internals()` are available. `{ formAssociated: true }` retains native form association. `ctx.emit(name, detail, options)` returns a CustomEvent and defaults to bubbling and composed behavior.
 
-Sometimes state and behavior belong to a *concept*, not a component.
+A real disconnect disposes resources in a microtask. This preserves runtime state during synchronous DOM moves, including keyed reordering. Reconnection after disposal creates a fresh state/setup/view. Disconnect and reconnect in the same turn preserve the existing runtime. Errors from invalid custom-element registration propagate; repeated valid definitions return the existing class with an optional warning.
 
-Forms.<br>
-Workflows.<br>
-Async coordination.<br>
-Shared application state.<br>
+## Mounting and models
 
-For those cases, Glint provides **models** — a way to keep components readable when things stop being trivial.
+`mount(target, value)` returns `{ update(value), dispose(), disposed }`; `unmount(target)` disposes its view. Updating a compatible template preserves DOM. Replacing a mount disposes its previous bindings. Call `dispose` or `unmount` when removing an externally mounted view; arbitrary DOM removal cannot infer ownership of standalone mounts.
 
-A model is a small unit of **stateful behavior** that:
-- owns a state container
-- exposes actions and derived values
-- has no idea what the DOM looks like
+`model(factory)` calls `factory(state)`. Use `model(factory)(ctx.state)` to attach model effects to component lifetime. Existing zero-argument factories still work, but any state they create themselves must be explicitly disposed. `model.owned(factory)(ctx)` remains available and registers an instance's `dispose` method when provided. `model.shared(key, factory)()` shares a state-owned instance; `model.disposeShared(key)` explicitly releases it.
 
-```js
-import { model, createStateContainer } from 'glintjs';
+`createSignalAdapter` validates an adapter shape. `tc39Signals` is a compatibility facade over Preact, **not a TC39 polyfill or a runtime adapter-selection mechanism**.
 
-const formModel = model.owned(() => {
-  const state = createStateContainer();
+See [reference alignment notes](docs/reference-alignment.md) for architecture, compatibility decisions, and validation limits.
 
-  const value = state.signal('');
-  const valid = state.computed(() => value().length > 0);
+## Status and license
 
-  function reset() {
-    value('');
-  }
-
-  return { value, valid, reset };
-});
-```
-
-```js
-define('my-form', (ctx) => {
-  const form = formModel(ctx);
-
-  ctx.view(() => html`
-    <input
-      value=${form.value()}
-      oninput=${e => form.value(e.target.value)}
-    />
-    ${when(form.valid, () => html`<p>Looks good.</p>`)}
-  `);
-});
-```
-
-This keeps components focused on **structure and wiring**,
-and keeps stateful behavior somewhere it doesn't suffocate.
-
-(There’s more to say about this, but the examples usually say enough.)
-
-If a model should be shared, opt in explicitly:
-
-```js
-const sessionModel = model.shared('session', () => {
-  const state = createStateContainer();
-  const user = state.signal(null);
-  return { user };
-});
-
-const session = sessionModel();
-```
-
-Models are not hooks.<br>
-They are not components.<br>
-They are not required.<br>
-
-They’re just **named state boundaries** for when things start getting messy.
-
----
-
-## mounting your app - rendering is a lie
-
-Glint does not “run” your application.
-
-There’s no render loop.<br>
-No re-invocation cycle.<br>
-No framework-managed sense of “now we update (we think)”<br>
-
-The `mount` convenience utility places DOM into the world — once — and steps aside.
-```js
-import { mount, html } from 'glintjs';
-
-mount('#app', html`
-  <h1>Hello</h1>
-  <my-counter></my-counter>
-`);
-```
-
-After this:
-- the DOM exists
-- Custom Elements instantiate naturally
-- signals update only what depends on them
-
-Think of `mount` as **placement**, not execution.
-
-You’re saying:
-
-> “Put this DOM here.”
-
-Not:
-
-> “Please take over my application.”
-
-Because Glint is built on native Web Components, `mount` is completely optional...<br>
-You can also import components and use them directly in HTML.
-
----
-
-## What Glint is (and isn’t)
-
-It’s an **ergonomic layer over native Web Components**, designed as a reference implementation of a clearer way to think about UI — useful even if you never adopt it wholesale.
-
-Glint is built around a few key principles:
-
-- clarity over cleverness
-- explicit identity
-- localized change
-- minimal surface area
-- the platform as foundation
-
-Or more simply:
-
-> *Glint prefers being understandable to being impressive.*
-
-It is not:
-- a virtual DOM framework
-- a compiler
-- an application governator
-- or an attempt to “win” the ecosystem
-
-More than anything, Glint is an experiment in **keeping UI simple enough to reason about** — without making things up.
-
----
-
-## Status
-
-⚠️ Experimental.
-
-Stable enough to explore and reason with.<br>
-Not yet something you should bet a business on.<br>
-
-The smallness is intentional.
-
----
-
-## License
-
-MIT
-<small>Do whatever you want. Just don’t pretend it’s something it isn’t.</small>
+Experimental; MIT. This repository has regression tests and a browser smoke test, but does not promise cross-browser or server-rendering support.

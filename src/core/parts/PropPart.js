@@ -1,19 +1,4 @@
-import { unwrapOne } from '../signals';
-
-export class PropPart {
-  constructor(el, propName, ctxEffect) {
-    this.el = el;
-    this.propName = propName;
-    this.ctxEffect = ctxEffect;
-  }
-
-  bind(getter) {
-    const { el, propName, ctxEffect } = this;
-
-    ctxEffect(() => {
-      let val = getter();
-      val = unwrapOne(val);
-      el[propName] = val;
-    });
-  }
+import { ValueBinding } from './Binding.js';
+export class PropPart extends ValueBinding {
+  set(value) { this.element[this.name] = value; }
 }

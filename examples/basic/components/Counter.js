@@ -1,4 +1,4 @@
-import { define, html } from '../../../src';
+import { define, html } from '../../../src/index.js';;
 
 define('tsp-counter', (ctx) => {
   const { state, props } = ctx;

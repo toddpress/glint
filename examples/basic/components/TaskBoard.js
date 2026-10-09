@@ -5,8 +5,7 @@ import {
   when,
   match,
   model,
-  createStateContainer,
-} from '../../../src';
+} from '../../../src/index.js';;
 
 define('tsp-task-board', (ctx) => {
   const { props, emit, onMount, onDestroy, effect } = ctx;
@@ -56,13 +55,13 @@ define('tsp-task-board', (ctx) => {
         <h2>${props.title ?? 'Tasks'}</h2>
 
         <div style="display: flex; gap: 0.5rem; margin: 0.5rem 0;">
-          ${each(['all', 'active', 'completed'], (id) => id, (f) => html`
+          ${each.value(['all', 'active', 'completed'], (id) => id, (f) => html`
             <button
               onclick=${() => board.filter(f)}
               style="
                 padding: 0.25rem 0.5rem;
-                background: ${board.filter() === f ? '#333' : '#eee'};
-                color: ${board.filter() === f ? 'white' : 'black'};
+                background: ${() => board.filter() === f ? '#333' : '#eee'};
+                color: ${() => board.filter() === f ? 'white' : 'black'};
                 border: none;
                 border-radius: 3px;
               "
@@ -92,7 +91,7 @@ define('tsp-task-board', (ctx) => {
       </section>
 
       <ul style="list-style: none; padding: 0; margin: 0;">
-        ${each(board.filtered, ({ id }) => id, (task) => html`
+        ${each.value(board.filtered, ({ id }) => id, (task) => html`
             <li style="display: flex; align-items: center; margin-bottom: 0.5rem;">
               <label style="flex: 1; display: flex; gap: 0.5rem;">
                 <input
@@ -132,8 +131,7 @@ define('tsp-task-board', (ctx) => {
   `;
 });
 
-export const taskBoardModel = model(() => {
-  const state = createStateContainer();
+export const taskBoardModel = model((state) => {
 
   // ----------------------------------------------------------
   // State
@@ -173,7 +171,7 @@ export const taskBoardModel = model(() => {
 
   function init(initialTasks = []) {
     tasks(initialTasks);
-    nextId(initialTasks.length + 1);
+    nextId(Math.max(0, ...initialTasks.map(task => Number(task.id) || 0)) + 1);
   }
 
   // ----------------------------------------------------------

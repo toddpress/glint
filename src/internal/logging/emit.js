@@ -1,11 +1,12 @@
-import { __DEV__ } from '../env';
-import { MESSAGES } from './messages'
-import { chalky } from './chalky'
-import { frameFragments, normalizeStyleIntents } from './fragments'
-import { render } from './renderers/console'
+import { __DEV__ } from '../env.js';
+import { getConfig } from '../../diagnostics/config.js';
+import { MESSAGES } from './messages.js'
+import { chalky } from './chalky.js'
+import { frameFragments, normalizeStyleIntents } from './fragments.js'
+import { render } from './renderers/console.js'
 
 export function emit(code, payload) {
-  if (!__DEV__) return
+  if (!__DEV__ || !getConfig().diagnostics) return
 
   const msg = MESSAGES[code]
 
