@@ -1,0 +1,21 @@
+kortix_version: 2
+project:
+  name: Rapid Tide
+  description: ""
+env:
+  required: []
+  optional: []
+default_agent: kortix
+agents:
+  kortix:
+    connectors: all
+    secrets: all
+    kortix_permissions: all
+    skills: all
+    repository_access: true
+connectors:
+  - slug: github-q6fjgw
+    provider: composio
+    name: GitHub
+    app: github
+    account: default
