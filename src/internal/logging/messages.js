@@ -2,8 +2,8 @@
  * Warnings emitted during development to help guide correct usage.
  */
 
-import { iif } from '../../core/utils';
-import { lines } from './helpers';
+import { iif } from '../../core/utils.js';
+import { lines } from './helpers.js';
 
 export const MESSAGES = Object.freeze({
   SIGNAL_OUTSIDE_CONTAINER: {

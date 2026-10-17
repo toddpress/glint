@@ -1,61 +1,40 @@
-/**
- * Models are an optional PATTERN in Glint, not a core primitive.
- *
- * A model is a small helper for bundling signal-backed identity
- * and domain logic into a reusable closure. This pattern kind of emerged
- * naturally as a consequence of how Glint components are structured and
- * defined. And more importantly, how Glint handles identity.
- *
- * Glint does not treat models specially — they are plain objects
- * passed through props like any other value.
- */
-
-import { _emit } from "../internal/logging";
-
-const model = (factory) => {
-  if (factory.length !== 0) {
-    _emit('MODEL_FACTORY_HAS_PARAMS', {
-      name: factory.name,
-      arity: factory.length,
-    });
-  }
-
+import { createStateContainer } from '../core/signals/index.js';
+import { warn } from '../diagnostics/config.js';
+const sharedModels = new Map();
+function validate(factory) {
+  if (typeof factory !== 'function') throw new TypeError('model(factory) expects a function');
   return factory;
-};
-
-model.owned = (factory) => {
-  const create = model(factory);
-
-  return (ctx) => {
-    if (!ctx) {
-      _emit('MODEL_OWNED_WITHOUT_CONTEXT');
-    }
-
-    const instance = create();
-
-    // TODO: implement cleanup registration
-
-    // ctx participates ONLY here
-    // ownership, cleanup, diagnostics, IR
-    // TODO: IR capture here (scoped)
+}
+export function model(factory) {
+  validate(factory);
+  return function useModel(state) {
+    if (!state) { warn('Pass ctx.state to model() to own its resources'); state = createStateContainer(); }
+    return factory(state);
+  };
+}
+model.owned = factory => {
+  validate(factory);
+  return ctx => {
+    if (!ctx?.state) throw new TypeError('model.owned requires a component context');
+    const instance = factory(ctx.state);
+    if (typeof instance?.dispose === 'function') ctx.state.own(() => instance.dispose());
     return instance;
   };
 };
-
-
-const sharedModels = new Map();
-
 model.shared = (key, factory) => {
-  const create = model(factory);
-
+  validate(factory);
   return () => {
     if (!sharedModels.has(key)) {
-      const instance = create();
-      // TODO: IR capture here (shared)
-      sharedModels.set(key, instance);
+      const state = createStateContainer();
+      try { sharedModels.set(key, { state, instance: factory(state) }); }
+      catch (error) { state.dispose(); throw error; }
     }
-    return sharedModels.get(key);
+    return sharedModels.get(key).instance;
   };
 };
-
-export { model };
+model.disposeShared = key => {
+  const shared = sharedModels.get(key);
+  if (!shared) return;
+  sharedModels.delete(key);
+  try { shared.instance?.dispose?.(); } finally { shared.state.dispose(); }
+};

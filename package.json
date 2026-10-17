@@ -1,19 +1,27 @@
 {
   "name": "@toddpress/glint",
   "version": "0.1.0",
-  "description": "A tiny, signal-powered framework for building Web Components that doesn’t hate you back.",
+  "description": "A tiny, signal-powered framework for building Web Components that doesn\u2019t hate you back.",
   "type": "module",
   "main": "./src/index.js",
   "scripts": {
     "start": "python -m http.server 8000 --directory ./",
-    "build:codepen": "rollup -c",
-    "watch:codepen": "rollup -c -w ./src"
+    "build:codepen": "rollup -c --configCodepen",
+    "watch:codepen": "rollup -c --configCodepen --watch",
+    "test": "node --test test/*.test.js",
+    "check": "node scripts/check.js",
+    "build": "rollup -c",
+    "test:browser": "node test/browser-smoke.js"
   },
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.js",
+    "./signals": "./src/signals.js",
+    "./diagnostics": "./src/diagnostics/index.js"
   },
   "files": [
-    "src"
+    "src",
+    "dist/glint.js",
+    "dist/glint.codepen.js"
   ],
   "dependencies": {
     "@preact/signals-core": "^1.12.1"
@@ -38,6 +46,11 @@
   "homepage": "https://glintjs.vercel.app/",
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "jsdom": "26.1.0",
+    "playwright-core": "1.58.2",
     "rollup": "^4.53.3"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

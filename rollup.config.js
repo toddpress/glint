@@ -1,23 +1,13 @@
 import resolve from '@rollup/plugin-node-resolve';
 
-export default {
-  input: 'src/index.js',
+export default commandLine => ({
+  input: commandLine.configCodepen ? 'src/codepen.js' : 'src/index.js',
   output: {
-    file: 'dist/glint.codepen.js',
+    file: commandLine.configCodepen ? 'dist/glint.codepen.js' : 'dist/glint.js',
     format: 'esm',
     sourcemap: false,
-    banner: `
-    // ============================================================
-    //  Glint – CodePen Dev Bundle
-    //  https://github.com/toddpress/glint
-    // ============================================================
-    `,
+    banner: '// Glint — https://github.com/toddpress/glint',
   },
-  plugins: [resolve({
-    browser: true,
-    dedupe: ['@preact/signals-core'],
-  })],
-  treeshake: {
-    moduleSideEffects: false
-  }
-};
+  plugins: [resolve({ browser: true, dedupe: ['@preact/signals-core'] })],
+  treeshake: { moduleSideEffects: false },
+});

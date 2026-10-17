@@ -13,5 +13,5 @@ export const walk = (whatToShow) => (root) => {
 };
 
 // Specialized walkers
-export const walkTextNodes = walk(NodeFilter.SHOW_TEXT);
-export const walkElementNodes = walk(NodeFilter.SHOW_ELEMENT);
+export const walkTextNodes = walk(4);
+export const walkElementNodes = walk(1);
