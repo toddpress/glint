@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glint Spectral Burst</title>
+  <link rel="icon" type="image/png" href="../public/favicon.png">
+  <script src="./main.js" type="module"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #181818; color: #f5f5f5; font: 1rem/1.5 Inter, system-ui, sans-serif; }
+    glint-spectral-burst { display: grid; min-height: 100svh; place-items: center; padding: 2rem; }
+    main { width: min(100%, 43rem); }
+    h1 { margin: 0 0 1.5rem; font-size: clamp(2.75rem, 7vw, 5rem); line-height: 1; letter-spacing: -0.055em; }
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+      gap: 0.85rem 1.5rem;
+      padding: 1.25rem;
+      background: #191919e8;
+      border: 1px solid #ffffff30;
+      border-radius: 0.85rem;
+    }
+    label { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.2rem 0.75rem; }
+    output { font-variant-numeric: tabular-nums; color: #ccc; }
+    input[type="range"] { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #9f9aff; }
+    input[type="color"] { width: 2.75rem; height: 1.85rem; padding: 0; border: 0; background: none; cursor: pointer; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; grid-column: 1 / -1; }
+    button { font: inherit; color: inherit; background: #191919; border: 1px solid #ffffff40; border-radius: 0.6rem; padding: 0.5rem 0.8rem; cursor: pointer; }
+    button:hover { background: #303030; }
+    @media (prefers-reduced-motion: reduce) { #toggle-motion { display: none; } }
+  </style>
+</head>
+<body>
+  <glint-spectral-burst>
+    <main>
+      <h1>Spectral burst</h1>
+      <form id="burst-controls" aria-label="Burst settings">
+        <label for="burst-duration">Cycle duration <output data-unit=" s" data-default="7 s">7 s</output>
+          <input id="burst-duration" name="duration" type="range" min="0.5" max="20" step="0.5" value="7">
+        </label>
+        <label for="burst-streak-count">Streak count <output data-unit="" data-default="7">7</output>
+          <input id="burst-streak-count" name="streak-count" type="range" min="1" max="7" value="7">
+        </label>
+        <label for="burst-intensity">Intensity <output data-unit="" data-default="0.85">0.85</output>
+          <input id="burst-intensity" name="intensity" type="range" min="0" max="1" step="0.05" value="0.85">
+        </label>
+        <label for="burst-blur">Blur <output data-unit=" px" data-default="Auto">Auto</output>
+          <input id="burst-blur" name="blur" type="range" min="0" max="40" value="14">
+        </label>
+        <label for="burst-spread">Spread <output data-unit="×" data-default="1×">1×</output>
+          <input id="burst-spread" name="spread" type="range" min="0" max="3" step="0.1" value="1">
+        </label>
+        <label for="burst-size">Streak size <output data-unit="×" data-default="1×">1×</output>
+          <input id="burst-size" name="size" type="range" min="0.1" max="3" step="0.1" value="1">
+        </label>
+        <label>Tip color <input name="tip-color" type="color" value="#2924ff"></label>
+        <label>Tail color <input name="tail-color" type="color" value="#a74823"></label>
+        <div class="actions">
+          <button id="toggle-motion" type="button">Pause animation</button>
+          <button type="reset">Reset settings</button>
+        </div>
+      </form>
+    </main>
+  </glint-spectral-burst>
+</body>
+</html>
