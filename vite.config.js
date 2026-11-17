@@ -13,6 +13,7 @@ export default defineConfig({
       input: [
         path('./examples/index.html'),
         path('./examples/basic/index.html'),
+        path('./examples/spectral-burst/index.html'),
         path('./examples/pedalboard/index.html'),
       ],
     },
