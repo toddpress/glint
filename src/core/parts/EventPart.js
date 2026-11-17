@@ -1,32 +1,23 @@
-import { isFunction, isSignal } from '../utils';
-import { unwrapOne } from '../signals';
-
-export class EventPart {
-  constructor(el, eventName, ctxEffect) {
-    this.el = el;
-    this.eventName = eventName;
-    this.ctxEffect = ctxEffect;
+import { Binding } from './Binding.js';
+import { isSignal } from '../signals/index.js';
+export class EventPart extends Binding {
+  constructor(scope, element, name) {
+    super(scope);
+    this.element = element;
+    this.name = name;
+    this.current = null;
+    scope.own(() => this.remove());
+  }
+  remove() {
+    if (this.current) this.element.removeEventListener(this.name, this.current);
     this.current = null;
   }
-
-  bind(getter) {
-    const { el, eventName, ctxEffect } = this;
-
-    ctxEffect(() => {
-      const v = getter();
-      let fn = unwrapOne(v);
-
-      if (this.current) {
-        el.removeEventListener(eventName, this.current);
-        this.current = null;
-      }
-
-      if (isSignal(fn)) fn = fn();
-
-      if (isFunction(fn)) {
-        this.current = fn;
-        el.addEventListener(eventName, this.current);
-      }
-    });
+  apply(source) {
+    const handler = isSignal(source) ? source() : source;
+    this.remove();
+    if (typeof handler === 'function' || typeof handler?.handleEvent === 'function') {
+      this.current = handler;
+      this.element.addEventListener(this.name, handler);
+    }
   }
 }

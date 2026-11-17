@@ -1,1 +1,1 @@
-export { emit as _emit } from './emit';
+export { emit as _emit } from './emit.js';

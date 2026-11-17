@@ -1,86 +1,45 @@
-import {
-  signal as _preactSignal,
-  computed as _preactComputed,
-  effect as _preactEffect,
-  batch as _preactBatch,
-} from '@preact/signals-core';
-
-import { isComputed } from '../utils';
-
-
-// ============================================================
-// Glint Signal Core — the ONLY file touching Preact Signals.
-// ============================================================
-// This isolates the external dependency and allows us to later
-// swap in TC39 Signals, Solid Signals, or a homegrown variant
-// without modifying the rest of Glint’s architecture.
-
-// ------------------------------------------------------------
-// State — thin wrapper around Preact's basic signal()
-// ------------------------------------------------------------
-
+// This is the only runtime module that depends on Preact Signals.
+import { signal as preactSignal, computed as preactComputed, effect as preactEffect, batch, untracked } from '@preact/signals-core';
+import { tracked } from '../../diagnostics/config.js';
 export class State {
-  constructor(initial) {
-    this._s = _preactSignal(initial);
-  }
-
-  // alias for ergonomic access
-  get value() { return this._s.value; }
-  set value(v) { this._s.value = v; }
-
-  get() {
-    return this._s.value;
-  }
-
-  set(v) {
-    this._s.value = v;
-    return v;
-  }
-
-  subscribe(listener) {
-    return _preactEffect(() => listener(this._s.value));
-  }
-}
-
-// ------------------------------------------------------------
-// Computed — thin wrapper around Preact's computed()
-// ------------------------------------------------------------
-export class Computed {
-  constructor(fn) {
-    this._s = _preactComputed(fn);
-  }
-
-  get value() { return this._s.value; }
+  constructor(initial) { this._s = preactSignal(initial); }
+  get value() { return this.get(); }
+  set value(next) { this.set(next); }
   get() { return this._s.value; }
-
-  set(_) {
-    throw new Error('Cannot directly set a Computed signal.');
-  }
-}
-
-// ------------------------------------------------------------
-// Subtle — low-level non-reactive access (like Solid.peek)
-// ------------------------------------------------------------
-export const subtle = {
-  get(target) {
-    if (target instanceof State || isComputed(target)) {
-      return target._s.peek();
+  set(next) {
+    if (!Object.is(this._s.peek(), next)) {
+      // Preact uses ===; make -0/0 observable while retaining Object.is semantics.
+      if (next === 0 && this._s.peek() === 0) batch(() => { this._s.value = undefined; this._s.value = next; });
+      else this._s.value = next;
     }
-    throw new TypeError('subtle.get: unsupported target');
-  },
-  set(target, value) {
-    if (target instanceof State) return target.set(value);
-    throw new TypeError('subtle.set: not writable');
-  },
+    return next;
+  }
+  subscribe(listener) { return effect(() => listener(this.get())); }
+}
+export class Computed extends State {
+  constructor(fn) { super(undefined); this._s = preactComputed(() => tracked(fn)); }
+  set() { throw new Error('Cannot set a computed signal'); }
+}
+export function effect(fn, owner) {
+  let stop;
+  let disposed = false;
+  let release = () => {};
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    release();
+    stop?.();
+  };
+  dispose.dispose = dispose;
+  Object.defineProperty(dispose, 'disposed', { get: () => disposed });
+  if (owner?.disposed) { disposed = true; return dispose; }
+  stop = preactEffect(() => tracked(fn));
+  release = owner?.own(dispose) ?? release;
+  return dispose;
+}
+export const subtle = {
+  get(target) { return target._s.peek(); },
+  set(target, value) { return target.set(value); },
 };
-
-// ------------------------------------------------------------
-// Unified Signal API — exported as a single namespace
-// ------------------------------------------------------------
-export const Signal = {
-  State,
-  Computed,
-  subtle,
-  effect: _preactEffect,
-  batch: _preactBatch,
-};
+export { batch, untracked };
+export const Signal = { State, Computed, subtle, effect, batch };

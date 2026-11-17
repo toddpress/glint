@@ -2,15 +2,14 @@
 
 A Glint container that launches CSS gradient streaks from its center. The demo lets you change the settings while the animation runs.
 
-From the repository root, install dependencies, rebuild the browser bundle, and start the example server.
+From the repository root, install dependencies and start Vite.
 
 ```sh
 npm ci
-npm run build:codepen
 npm start
 ```
 
-Open [the spectral burst demo](http://localhost:8000/examples/spectral-burst/).
+Open [the spectral burst demo](http://localhost:5173/spectral-burst/).
 
 The component accepts these live attributes.
 

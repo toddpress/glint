@@ -1,5 +1,5 @@
-import { __DEV__ } from "./env";
-import { _emit } from "./logging";
+import { __DEV__ } from "./env.js";
+import { _emit } from "./logging/index.js";
 
 export function createInternalsController(host, Component) {
   let internals = null;
@@ -14,12 +14,12 @@ export function createInternalsController(host, Component) {
 
     if (!__DEV__) return internals;
 
-    const _setFormValue = internals.setFormValue.bind(internals);
-    const _setValidity = internals.setValidity.bind(internals);
+    const _setFormValue = internals.setFormValue?.bind(internals);
+    const _setValidity = internals.setValidity?.bind(internals);
 
     internals.setFormValue = (...args) => {
       didSetFormValue = true;
-      return _setFormValue(...args);
+      return _setFormValue?.(...args);
     };
 
     internals.setValidity = (...args) => {
@@ -29,7 +29,7 @@ export function createInternalsController(host, Component) {
         _emit('VALIDITY_WITHOUT_FORM_VALUE', { name });
       }
 
-      return _setValidity(...args);
+      return _setValidity?.(...args);
     };
 
     return internals;
@@ -37,6 +37,11 @@ export function createInternalsController(host, Component) {
 
   function get() {
     requested = true;
+
+    if (typeof host.attachInternals !== 'function') {
+      _emit('INTERNALS_UNSUPPORTED', { name });
+      return null;
+    }
 
     if (__DEV__) {
       if (!Component.formAssociated) {

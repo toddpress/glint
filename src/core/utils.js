@@ -64,7 +64,6 @@ export const iif = (condition, consequent, alternative) =>
 export const generateUuid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-export const isSignal = (s) => s?.__isSignal === true;
-export const isComputed = (s) => s?.__isComputed === true;
+export { isSignal, isComputed } from './signals/signals.js';
 export const isState = (s) => s?.__isState === true;
 export const isTemplate = (t) => t?.__template === true;

@@ -1,4 +1,4 @@
-import { define, html } from '../../../dist/glint.codepen.js';
+import { define, html } from '../../../src/index.js';
 
 const numericProps = {
   duration: { property: '--spectral-period', min: 0.5, max: 60, unit: 's' },
@@ -14,7 +14,6 @@ const colorProps = {
 };
 
 const observedProps = [...Object.keys(numericProps), ...Object.keys(colorProps), 'streak-count'];
-const initialized = new WeakSet();
 
 function readNumber(element, name, min, max) {
   const raw = element.getAttribute(name)?.trim();
@@ -41,19 +40,14 @@ function applyProps(element, backdrop) {
   });
 }
 
-export const SpectralBurst = define('glint-spectral-burst', ({ el, root, onMount, onDestroy }) => {
-  if (!initialized.has(el)) {
-    initialized.add(el);
-
-    const sync = () => applyProps(el, root.querySelector('.backdrop'));
-    const observer = new MutationObserver(sync);
-    onMount(() => {
-      if (!el.isConnected) return;
-      sync();
-      observer.observe(el, { attributes: true, attributeFilter: observedProps });
-    });
-    onDestroy(() => observer.disconnect());
-  }
+export const registerSpectralBurst = () => define.shadow('glint-spectral-burst', ({ el, root, connected, own }) => {
+  const sync = () => applyProps(el, root.querySelector('.backdrop'));
+  const observer = new MutationObserver(sync);
+  connected(() => {
+    sync();
+    observer.observe(el, { attributes: true, attributeFilter: observedProps });
+  });
+  own(() => observer.disconnect());
 
   return html`
   <style>

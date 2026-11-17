@@ -1,9 +1,5 @@
 # Glint ⚡
 
----
-**NOTE**: this readme and the code are currently stale... 😅 See [the site](https://glint.surge.sh) for up to date docs. And if you're looking to dirty your hands with the latest, check out the [Codepen](https://codepen.io/toddpress/pen/GgrOgwe?editors=1010). Please feel free to file issues you find here on github
----
-
 *`glint` is a small system for thinking clearly about UI — and an ergonomic way to author Web Components without fighting the platform.*
 
 Glint is a small, signal-driven runtime for authoring **native Web Components** using real HTML templates and fine-grained reactivity — with no build step, no virtual DOM, and no interest in running your application for you.
@@ -34,7 +30,7 @@ It’s both:
 ## A taste
 
 ```js
-import { define, html } from 'glintjs';
+import { define, html } from '@toddpress/glint';
 
 define('my-counter', (ctx) => {
   const { state } = ctx;
@@ -43,11 +39,11 @@ define('my-counter', (ctx) => {
 
   const increment = () => count(count() + 1);
 
-  ctx.view(() => html`
+  return html`
     <button onclick=${increment}>
-      Count: ${count()} (x2 = ${doubled()})
+      Count: ${count} (x2 = ${doubled})
     </button>
-  `);
+  `;
 });
 ```
 
@@ -65,11 +61,9 @@ No framework hoping you don’t notice what it’s doing.<br>
 If you hate cramming all stateful logic into the component definition like me, let it breathe a bit with a model:
 
 ```js
-import { define, html, model, createStateContainer } from 'glintjs';
+import { define, html, model } from '@toddpress/glint';
 
-const counterModel = model.owned(() => {
-  const state = createStateContainer();
-
+const counterModel = model.owned((state) => {
   const count = state.signal(0);
   const doubled = state.computed(() => count() * 2);
 
@@ -83,11 +77,11 @@ const counterModel = model.owned(() => {
 define('my-counter', (ctx) => {
   const { count, doubled, increment } = counterModel(ctx);
 
-  ctx.view(() => html`
+  return html`
     <button onclick=${increment}>
-      Count: ${count()} (x2 = ${doubled()})
+      Count: ${count} (x2 = ${doubled})
     </button>
-  `);
+  `;
 });
 ```
 
@@ -98,10 +92,10 @@ Less friction.
 
 ## How it works (briefly)
 
-Glint components are real Custom Elements.
+Glint components are real Custom Elements. They use light DOM by default. Reach for `define.shadow(...)` when you want a shadow root.
 
 There’s no virtual tree keeping notes.<br>
-No reconciliation step deciding what *should* exist.<br>
+Bindings update the real DOM directly.<br>
 The browser already knows how to manage the DOM — that’s its job. Glint doesn’t argue with it.<br>
 
 Templates are just HTML:
@@ -135,9 +129,12 @@ If it doesn’t, it probably shouldn’t.
 Control flow is just functions:
 
 ```js
-${each(items, item => html`<li>${item}</li>`)}
+${() => items().map(item => html`<li key=${item.id}>${item.label}</li>`)}
 ${when(loading, () => html`<p>Loading…</p>`)}
 ```
+
+When the list changes order, Glint moves the existing DOM for each `key`.
+If the template literal is the same, its bindings update in place.
 
 No new syntax.<br>
 No special rules.<br>
@@ -157,16 +154,14 @@ Shared application state.<br>
 For those cases, Glint provides **models** — a way to keep components readable when things stop being trivial.
 
 A model is a small unit of **stateful behavior** that:
-- owns a state container
+- uses a state container
 - exposes actions and derived values
 - has no idea what the DOM looks like
 
 ```js
-import { model, createStateContainer } from 'glintjs';
+import { model } from '@toddpress/glint';
 
-const formModel = model.owned(() => {
-  const state = createStateContainer();
-
+const formModel = model.owned((state) => {
   const value = state.signal('');
   const valid = state.computed(() => value().length > 0);
 
@@ -182,13 +177,13 @@ const formModel = model.owned(() => {
 define('my-form', (ctx) => {
   const form = formModel(ctx);
 
-  ctx.view(() => html`
+  return html`
     <input
-      value=${form.value()}
+      .value=${form.value}
       oninput=${e => form.value(e.target.value)}
     />
     ${when(form.valid, () => html`<p>Looks good.</p>`)}
-  `);
+  `;
 });
 ```
 
@@ -200,8 +195,7 @@ and keeps stateful behavior somewhere it doesn't suffocate.
 If a model should be shared, opt in explicitly:
 
 ```js
-const sessionModel = model.shared('session', () => {
-  const state = createStateContainer();
+const sessionModel = model.shared('session', (state) => {
   const user = state.signal(null);
   return { user };
 });
@@ -227,7 +221,7 @@ No framework-managed sense of “now we update (we think)”<br>
 
 The `mount` convenience utility places DOM into the world — once — and steps aside.
 ```js
-import { mount, html } from 'glintjs';
+import { mount, html } from '@toddpress/glint';
 
 mount('#app', html`
   <h1>Hello</h1>
@@ -252,6 +246,8 @@ Not:
 
 Because Glint is built on native Web Components, `mount` is completely optional...<br>
 You can also import components and use them directly in HTML.
+
+`mount` returns a handle with `update(value)` and `dispose()` for when you need to replace or remove a mounted view yourself.
 
 ---
 
@@ -278,6 +274,26 @@ It is not:
 - or an attempt to “win” the ecosystem
 
 More than anything, Glint is an experiment in **keeping UI simple enough to reason about** — without making things up.
+
+---
+
+## Try it
+
+With Node 20.19+ or 22.12+:
+
+```sh
+npm ci
+npm start
+```
+
+Open the URL Vite prints.
+
+- [Basics](examples/basic/) has a counter and task board.
+- [Spectral Burst](examples/spectral-burst/) lets you tweak the animation as it runs.
+- [Pedalboard](examples/pedalboard/) lets you drag Tuna effects into a different order and load a cabinet impulse response. Start with the demo loop, bring an audio file, or plug in a guitar interface and use headphones.
+
+`npm run build:examples` builds the gallery into `examples/dist`.
+`npm run preview:examples` serves that build.
 
 ---
 

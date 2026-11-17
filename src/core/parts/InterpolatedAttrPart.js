@@ -1,29 +1,18 @@
-import { isString } from '../utils';
-import { unwrapOne } from '../signals';
-
-export class InterpolatedAttrPart {
-  constructor(el, attrName, segments, ctxEffect) {
-    this.el = el;
-    this.attrName = attrName;
-    this.segments = segments; // [string | getter, ...]
-    this.ctxEffect = ctxEffect;
+import { Binding } from './Binding.js';
+import { readValue } from '../signals/index.js';
+export class InterpolatedAttrPart extends Binding {
+  constructor(scope, element, name, segments) {
+    super(scope);
+    this.element = element;
+    this.name = name;
+    this.segments = segments;
   }
-
-  bind() {
-    const { el, attrName: name, segments, ctxEffect } = this;
-
-    ctxEffect(() => {
-      const result = segments
-        .map((seg) => {
-          if (isString(seg)) return seg;
-          let v = seg();
-          v = unwrapOne(v);
-          if (v == null || v === false) return '';
-          return String(v);
-        })
-        .join('');
-
-      el.setAttribute(name, result);
-    });
+  apply(values) {
+    const result = this.segments.map(segment => {
+      if (typeof segment === 'string') return segment;
+      const value = readValue(values[segment.index]);
+      return value == null || value === false ? '' : String(value);
+    }).join('');
+    this.element.setAttribute(this.name, result);
   }
 }

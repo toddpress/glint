@@ -1,2 +1,2 @@
-export * from './walk';
-export * from './attrs';
+export * from './walk.js';
+export * from './attrs.js';

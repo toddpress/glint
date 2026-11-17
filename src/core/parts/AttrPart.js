@@ -1,26 +1,10 @@
-import { unwrapOne } from '../signals';
-
-export class AttrPart {
-  constructor(el, attrName, ctxEffect) {
-    this.el = el;
-    this.attrName = attrName;
-    this.ctxEffect = ctxEffect;
+import { ValueBinding } from './Binding.js';
+export class AttrPart extends ValueBinding {
+  set(value) {
+    if (value == null || value === false) this.element.removeAttribute(this.name);
+    else this.element.setAttribute(this.name, value === true ? '' : String(value));
   }
-
-  bind(getter) {
-    const { el, attrName, ctxEffect } = this;
-
-    ctxEffect(() => {
-      let val = getter();
-      val = unwrapOne(val);
-
-      if (val == null || val === false) {
-        el.removeAttribute(attrName);
-      } else if (val === true) {
-        el.setAttribute(attrName, '');
-      } else {
-        el.setAttribute(attrName, String(val));
-      }
-    });
-  }
+}
+export class BooleanAttrPart extends ValueBinding {
+  set(value) { this.element.toggleAttribute(this.name, Boolean(value)); }
 }
