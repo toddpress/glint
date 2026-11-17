@@ -16,7 +16,7 @@ export { State, Computed, subtle, Signal };
 // Type / value helpers
 // ------------------------------------------------------------
 
-import { isComputed, isFunction } from '../utils';
+import { isComputed, isFunction, isSignal } from '../utils';
 
 // ------------------------------------------------------------
 // Accessor wrapper — Glint-style signals

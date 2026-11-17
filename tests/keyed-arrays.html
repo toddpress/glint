@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<title>Glint keyed array regression</title>
+<div id="root"></div>
+<pre id="result">Running</pre>
+<script type="module">
+  import { createStateContainer, define, each, html, mount } from '../dist/glint.codepen.js';
+
+  const root = document.querySelector('#root');
+  const result = document.querySelector('#result');
+  const signal = createStateContainer().signal;
+  const assert = (condition, message) => {
+    if (!condition) throw new Error(message);
+  };
+
+  const run = (useNativeMove) => {
+    const rows = signal(['a', 'b', 'c', 'd'].map((id) => ({ id, label: id })));
+    const replacements = signal(false);
+    const clicks = [];
+    let renders = 0;
+    const name = useNativeMove ? 'test-native-pedal' : 'test-fallback-pedal';
+    const select = () => [...root.querySelectorAll(name)];
+    define(name, ({ state }) => {
+      renders++;
+      const level = state.signal(7);
+      return html`<button onclick=${() => level(level() + 1)}>${level}</button>`;
+    });
+
+    // Template literal sites stay fixed across updates.
+    const renderNative = ({ id, label }) => html`
+      <test-native-pedal key=${id} data-id=${id} aria-label="Pedal ${label}"
+        :label=${label} onclick=${() => clicks.push(label)}>${label}</test-native-pedal>
+    `;
+    const renderFallback = ({ id, label }) => html`
+      <test-fallback-pedal key=${id} data-id=${id} aria-label="Pedal ${label}"
+        :label=${label} onclick=${() => clicks.push(label)}>${label}</test-fallback-pedal>
+    `;
+    const render = useNativeMove ? renderNative : renderFallback;
+    mount(root, html`${() => rows().map((row) =>
+      replacements() ? html`<span key=${row.id}>${row.label}</span>` : render(row)
+    )}`);
+
+    const original = new Map(select().map((node) => [node.dataset.id, node]));
+    assert(original.size === 4 && renders === 4, 'Initial pedal render');
+    assert(!original.get('a').hasAttribute('key'), 'Key is renderer metadata');
+
+    const a = original.get('a');
+    const button = a.shadowRoot.querySelector('button');
+    button.click();
+
+    for (let index = 0; index < 100; index++) {
+      const [first, ...rest] = rows();
+      rows([...rest, first]);
+      assert(select().every((node, position) =>
+        node === original.get(rows()[position].id)
+      ), 'Reorder retains node identities and follows model order');
+    }
+
+    assert(renders === 4, 'Reorder never rerenders Glint components');
+    assert(a.shadowRoot.querySelector('button') === button, 'Shadow DOM survives moves');
+    assert(button.textContent === '8', 'Pedal-local signal state survives moves');
+
+    rows(rows().map((row) => row.id === 'a' ? { ...row, label: 'updated' } : row));
+    assert(select()[0] === a, 'Binding update retains original node');
+    assert(a.label === 'updated' && a.textContent.trim() === 'updated', 'Property and text refresh');
+    assert(a.getAttribute('aria-label') === 'Pedal updated', 'Interpolated attribute refreshes');
+    clicks.length = 0;
+    a.click();
+    assert(clicks.join() === 'updated', 'Only the current event handler fires');
+
+    rows(rows().filter(({ id }) => id !== 'a'));
+    a.click();
+    assert(!a.isConnected && clicks.length === 1, 'Removed nodes release handlers');
+    rows([{ id: 'a', label: 'new' }, ...rows()]);
+    assert(select()[0] !== a, 'Reinserted key receives a fresh instance');
+    replacements(true);
+    assert(select().length === 0 && root.querySelectorAll('span').length === 4,
+      'Same key with different template replaces node');
+    rows([]);
+    assert(root.querySelectorAll('span').length === 0, 'Empty array clears keyed entries');
+  };
+
+  try {
+    const moveBefore = Element.prototype.moveBefore;
+    if (moveBefore) run(true);
+    try {
+      Element.prototype.moveBefore = undefined;
+      run(false);
+    } finally {
+      Element.prototype.moveBefore = moveBefore;
+    }
+
+    const items = signal(['a', 'b']);
+    mount(root, html`${each(items, (id) => id, (id) => html`<p>${id}</p>`)}`);
+    const first = root.querySelector('p');
+    items(['b', 'a']);
+    assert(root.querySelectorAll('p')[1] === first, 'Existing keyed each shares reconciliation');
+    mount(root, html`${['plain', html`<b> array</b>`]}`);
+    assert(root.textContent === 'plain array', 'Unkeyed arrays still render');
+
+    for (const [render, error] of [
+      [() => [html`<p key="a"></p>`, html`<p key="a"></p>`], /duplicate/],
+      [() => [html`<p key="a"></p>`, html`<p></p>`], /mix keyed/],
+      [() => [html`<p key=${null}></p>`], /cannot be null/],
+    ]) {
+      let failure;
+      try {
+        mount(root, html`${render}`);
+      } catch (caught) {
+        failure = caught;
+      }
+      assert(error.test(failure?.message), 'Invalid keys produce a specific error');
+      assert(root.textContent === 'plain array', 'Invalid replacement leaves mounted DOM intact');
+    }
+
+    result.textContent = 'PASS';
+  } catch (error) {
+    result.textContent = 'FAIL: ' + error.stack;
+    throw error;
+  }
+</script>
+</html>

@@ -1,4 +1,6 @@
-import './components/SpectralBurst.js';
+import { registerSpectralBurst } from './components/SpectralBurst.js';
+
+registerSpectralBurst();
 
 const burst = document.querySelector('glint-spectral-burst');
 const controls = document.querySelector('#burst-controls');

@@ -6,9 +6,9 @@ import {
   match,
   model,
   createStateContainer,
-} from '../../../src';
+} from '../../../src/index.js';
 
-define('tsp-task-board', (ctx) => {
+export const registerTaskBoard = () => define('tsp-task-board', (ctx) => {
   const { props, emit, onMount, onDestroy, effect } = ctx;
 
   // ----------------------------------------------------------

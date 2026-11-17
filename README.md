@@ -143,6 +143,17 @@ No new syntax.<br>
 No special rules.<br>
 Just JavaScript, doing what it already does.
 
+For a reorderable list, use ordinary array mapping and put a stable, unique
+`key` on each template's single root element:
+
+```js
+${() => items().map(item => html`<li key=${item.id}>${item.label}</li>`)}
+```
+
+Glint keeps the existing element when its key and template literal stay the
+same, updates its bindings, and moves it into the new position. The key is
+renderer metadata and is removed from the DOM.
+
 ---
 
 ## Models (optional, but handy)
@@ -296,3 +307,17 @@ The smallness is intentional.
 
 MIT
 <small>Do whatever you want. Just don’t pretend it’s something it isn’t.</small>
+
+
+## Examples
+
+Run `npm ci` and `npm start` with Node 20.19+ or 22.12+, then open the
+URL Vite prints. The index links to Basics, Spectral Burst, and Pedalboard.
+
+Run `npm run build:examples` to generate a static site in `examples/dist`.
+Use `npm run preview:examples` to serve that build locally.
+
+The [pedalboard](examples/pedalboard/) can play a demo loop, loop a local
+audio file, or monitor a guitar interface with headphones. Load a cabinet
+impulse response from disk to enable convolution in the chain. Guitar input
+requires browser permission and a secure origin such as localhost.

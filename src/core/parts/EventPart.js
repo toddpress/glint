@@ -6,7 +6,6 @@ export class EventPart {
     this.el = el;
     this.eventName = eventName;
     this.ctxEffect = ctxEffect;
-    this.current = null;
   }
 
   bind(getter) {
@@ -16,16 +15,11 @@ export class EventPart {
       const v = getter();
       let fn = unwrapOne(v);
 
-      if (this.current) {
-        el.removeEventListener(eventName, this.current);
-        this.current = null;
-      }
-
       if (isSignal(fn)) fn = fn();
 
       if (isFunction(fn)) {
-        this.current = fn;
-        el.addEventListener(eventName, this.current);
+        el.addEventListener(eventName, fn);
+        return () => el.removeEventListener(eventName, fn);
       }
     });
   }

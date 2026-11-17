@@ -1,5 +1,6 @@
-import { renderTemplate } from './template';
-import { Signal } from './signals';
+import { instantiateTemplate } from './template';
+
+const templates = new WeakMap();
 
 
 export const mount = (target = document.body, template) => {
@@ -12,8 +13,8 @@ export const mount = (target = document.body, template) => {
     throw new Error('Glint render target not found');
   }
 
-  const dom = renderTemplate(template, (fn) => Signal.effect(fn));
-
-  rootNode.innerHTML = '';
-  rootNode.appendChild(dom);
+  const instance = instantiateTemplate(template);
+  templates.get(rootNode)?.dispose();
+  templates.set(rootNode, instance);
+  rootNode.replaceChildren(instance.fragment);
 };

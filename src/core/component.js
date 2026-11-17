@@ -3,7 +3,8 @@ import { _emit } from '../internal/logging';
 import { createInternalsController } from '../internal/element-internals';
 
 import { createStateContainer, Signal } from './signals';
-import { renderTemplate } from './template';
+import { instantiateTemplate } from './template';
+import { isMoving } from './dom/move';
 import { safeParse } from './utils';
 
 // ------------------------------------------------------------
@@ -19,6 +20,7 @@ export class BaseComponent extends HTMLElement {
   effectsCleanupFns = [];
 
   #root;
+  #template;
 
   constructor() {
     super();
@@ -62,14 +64,20 @@ export class BaseComponent extends HTMLElement {
   }
 
   connectedCallback() {
+    if (isMoving(this)) return;
     this._render();
     queueMicrotask(() => {
       this.hooks.onMount.forEach((fn) => fn());
     });
   }
 
+  connectedMoveCallback() {}
+
   disconnectedCallback() {
+    if (isMoving(this)) return;
     this.hooks.onDestroy.forEach((fn) => fn());
+    this.#template?.dispose();
+    this.#template = null;
     this.effectsCleanupFns.forEach((fn) => fn?.());
     this.effectsCleanupFns = [];
   }
@@ -96,10 +104,10 @@ export class BaseComponent extends HTMLElement {
     if (!renderer) return;
 
     const tpl = renderer(this.ctx);
-    const dom = renderTemplate(tpl, (fn) => this.ctx.effect(fn));
-
-    this.#root.innerHTML = '';
-    this.#root.appendChild(dom);
+    const template = instantiateTemplate(tpl);
+    this.#template?.dispose();
+    this.#template = template;
+    this.#root.replaceChildren(template.fragment);
   }
 }
 

@@ -22,6 +22,7 @@ import {
   InterpolatedAttrPart,
 } from './parts';
 
+import { Signal, unwrapOne } from './signals';
 import { isString, isTemplate } from './utils';
 
 // ------------------------------------------------------------
@@ -47,7 +48,22 @@ const compileTemplate = (strings, valueCount) => {
 
   const tpl = document.createElement('template');
   tpl.innerHTML = htmlString;
-  return { fragment: tpl.content };
+  const roots = Array.from(tpl.content.childNodes).filter(
+    (node) => node.nodeType !== Node.COMMENT_NODE &&
+      (node.nodeType !== Node.TEXT_NODE || node.textContent.trim())
+  );
+  const root = roots.length === 1 ? roots[0] : null;
+  const key = root?.getAttribute?.('key');
+
+  if (key == null) return { fragment: tpl.content };
+
+  const markers = extractMarkers(key, markerPattern);
+  if (markers.length && (markers.length !== 1 || markers[0].full !== key)) {
+    throw new Error('Glint key must be a literal or a single expression.');
+  }
+
+  root.removeAttribute('key');
+  return { fragment: tpl.content, key, keyIndex: markers[0]?.index };
 };
 
 const getCompiled = (strings, valueCount) => {
@@ -60,18 +76,60 @@ const getCompiled = (strings, valueCount) => {
 };
 
 // ------------------------------------------------------------
-// renderTemplate
+// Template instances
 // ------------------------------------------------------------
 
-export const renderTemplate = (tpl, ctxEffect) => {
+export const getTemplateKey = (tpl) => {
+  if (!isTemplate(tpl)) return;
+
+  const { key, keyIndex } = getCompiled(tpl.strings, tpl.values.length);
+  if (key === undefined) return;
+
+  const value = keyIndex === undefined ? key : unwrapOne(tpl.values[keyIndex]());
+  if (value == null) throw new Error('Glint key cannot be null or undefined.');
+  return value;
+};
+
+export const instantiateTemplate = (tpl) => {
   if (!isTemplate(tpl)) {
-    throw new Error('renderTemplate expected a template.');
+    throw new Error('Glint expected a template.');
   }
 
-  const { strings, values } = tpl;
-  const compiled = getCompiled(strings, values.length);
+  const { strings } = tpl;
+  const compiled = getCompiled(strings, tpl.values.length);
   const fragment = compiled.fragment.cloneNode(true);
+  const expressions = tpl.values.map((get) => new Signal.State(get()));
+  const values = expressions.map((expression) => () => expression.get());
+  const effects = [];
+  const ctxEffect = (fn) => {
+    const stop = Signal.effect(fn);
+    effects.push(stop);
+    return stop;
+  };
+  const dispose = () => {
+    effects.splice(0).forEach((stop) => stop());
+  };
 
+  try {
+    bindTemplate(fragment, values, ctxEffect, effects);
+  } catch (error) {
+    dispose();
+    throw error;
+  }
+
+  return {
+    fragment,
+    strings,
+    update(next) {
+      Signal.batch(() => {
+        expressions.forEach((expression, index) => expression.set(next.values[index]()));
+      });
+    },
+    dispose,
+  };
+};
+
+const bindTemplate = (fragment, values, ctxEffect, effects) => {
   const pendingNodeParts = [];
 
   // ----------------------------------------------------------
@@ -114,7 +172,8 @@ export const renderTemplate = (tpl, ctxEffect) => {
 
   // Bind NodeParts after anchors exist
   pendingNodeParts.forEach(({ marker, getter }) => {
-    const part = new NodePart(marker, ctxEffect);
+    const part = new NodePart(marker);
+    effects.push(() => part.dispose());
     part.bind(getter);
   });
 
@@ -192,6 +251,4 @@ export const renderTemplate = (tpl, ctxEffect) => {
       }
     });
   });
-
-  return fragment;
 };

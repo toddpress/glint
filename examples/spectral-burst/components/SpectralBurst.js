@@ -1,4 +1,4 @@
-import { define, html } from '../../../dist/glint.codepen.js';
+import { define, html } from '../../../src/index.js';
 
 const numericProps = {
   duration: { property: '--spectral-period', min: 0.5, max: 60, unit: 's' },
@@ -41,7 +41,7 @@ function applyProps(element, backdrop) {
   });
 }
 
-export const SpectralBurst = define('glint-spectral-burst', ({ el, root, onMount, onDestroy }) => {
+export const registerSpectralBurst = () => define('glint-spectral-burst', ({ el, root, onMount, onDestroy }) => {
   if (!initialized.has(el)) {
     initialized.add(el);
 

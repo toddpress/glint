@@ -1,199 +1,177 @@
-import {
-  isSignal,
-  isComputed,
-  isFunction,
-  isTemplate,
-} from '../utils';
+import { isComputed, isFunction, isSignal, isTemplate } from '../utils';
+import { Signal, unwrapOne } from '../signals';
+import { getTemplateKey, instantiateTemplate } from '../template';
+import { moveNodeBefore } from '../dom/move';
 
-import { unwrapOne } from '../signals';
-import { renderTemplate } from '../template';
+const resolve = (value) => {
+  value = unwrapOne(value);
+  return isFunction(value) && !isSignal(value) && !isComputed(value)
+    ? value()
+    : value;
+};
 
 export class NodePart {
-  constructor(endMarker, ctxEffect) {
+  constructor(endMarker) {
     this.end = endMarker;
-    this.ctxEffect = ctxEffect;
-
-    this.start = null;           // created lazily
-    this.effectStop = null;      // this part’s own reactive subscription
-    this.child = null;           // e.g. KeyedEachPart
+    this.start = document.createComment('gl:part');
+    this.end.before(this.start);
+    this.effectStop = null;
+    this.keyed = null;
+    this.templates = [];
   }
 
   bind(getter) {
-    if (!this.start) {
-      this.start = document.createComment('gl:part');
-      this.end.parentNode?.insertBefore(this.start, this.end);
-    }
-
-    // One reactive subscription per NodePart
-    this.effectStop?.();
-    this.effectStop = this.ctxEffect(() => {
-      Signal.batch(() => this.update(getter));
+    this.effectStop = Signal.effect(() => {
+      Signal.batch(() => this.update(getter()));
     });
   }
 
   dispose() {
-    this.child?.dispose?.();
-    this.child = null;
-
     this.effectStop?.();
-    this.effectStop = null;
-
     this.clear();
-
-    this.start?.remove();
-    this.start = null;
-    // end marker is owned by template compilation
+    this.start.remove();
   }
 
   clear() {
-    if (!this.start) return;
+    this.keyed?.dispose();
+    this.keyed = null;
+    this.templates.splice(0).forEach((instance) => instance.dispose());
 
-    // Remove everything between start and end
-    let n = this.start.nextSibling;
-    while (n && n !== this.end) {
-      const next = n.nextSibling;
-      n.remove();
-      n = next;
+    let node = this.start.nextSibling;
+    while (node && node !== this.end) {
+      const next = node.nextSibling;
+      node.remove();
+      node = next;
     }
   }
 
-  insert(node) {
-    this.end.parentNode?.insertBefore(node, this.end);
-  }
-
-  update(getter) {
-    let value = unwrapOne(getter());
-
-    if (isFunction(value) && !isSignal(value) && !isComputed(value)) {
-      value = value();
-    }
-
-    if (value == null || value === false) {
-      this.child?.dispose?.();
-      this.child = null;
-      this.clear();
-      return;
-    }
-
-    // Keyed each descriptor takes over this part’s range
+  update(value) {
+    value = resolve(value);
+    let items;
     if (value?.__glintEach && value.keyed) {
-      if (!(this.child instanceof KeyedEachPart)) {
-        this.child?.dispose?.();
-        this.child = new KeyedEachPart(this.start, this.end, this.ctxEffect);
+      items = value.items;
+    } else if (Array.isArray(value)) {
+      const entries = Array.from(value, (tpl) => ({ key: getTemplateKey(tpl), tpl }));
+      if (entries.some(({ key }) => key !== undefined)) {
+        if (entries.some(({ key }) => key === undefined)) {
+          throw new Error('Glint arrays cannot mix keyed and unkeyed items.');
+        }
+        items = entries;
       }
-      this.child.update(value.items);
+    }
+
+    if (items) {
+      const keys = new Set(items.map(({ key }) => key));
+      if (keys.size !== items.length) {
+        throw new Error('Glint arrays cannot contain duplicate keys.');
+      }
+
+      if (!this.keyed) {
+        this.clear();
+        this.keyed = new KeyedRange(this.end);
+      }
+      this.keyed.update(items, keys);
       return;
     }
 
-    // Plain mode
-    this.child?.dispose?.();
-    this.child = null;
     this.clear();
-
-    this.#renderValue(value);
+    this.renderValue(value);
   }
 
-  #renderValue(val) {
-    val = unwrapOne(val);
+  renderValue(value) {
+    value = resolve(value);
+    if (value == null || value === false) return;
 
-    if (isFunction(val) && !isSignal(val) && !isComputed(val)) {
-      val = val();
+    if (isTemplate(value)) {
+      const instance = instantiateTemplate(value);
+      this.templates.push(instance);
+      this.end.before(instance.fragment);
+    } else if (Array.isArray(value)) {
+      value.forEach((item) => this.renderValue(item));
+    } else {
+      this.end.before(document.createTextNode(String(value)));
     }
-
-    if (val == null || val === false) return;
-
-    if (isTemplate(val)) {
-      // IMPORTANT: renderTemplate receives a ctxEffect for nested parts.
-      // For correctness, nested parts must also be range-based like this one.
-      this.insert(renderTemplate(val, this.ctxEffect));
-      return;
-    }
-
-    if (Array.isArray(val)) {
-      val.forEach((x) => this.#renderValue(x));
-      return;
-    }
-
-    this.insert(document.createTextNode(String(val)));
   }
 }
 
-class KeyedEachPart {
-  constructor(start, end, ctxEffect) {
-    this.start = start;
+class KeyedRange {
+  constructor(end) {
     this.end = end;
-    this.ctxEffect = ctxEffect;
-    this.entries = new Map(); // key -> { start, end, part }
+    this.entries = new Map();
   }
 
   dispose() {
-    Array.from(this.entries.values()).forEach((e) => {
-      e.part.dispose?.();
-      e.start.remove();
-      e.end.remove();
-    });
+    for (const entry of this.entries.values()) this.remove(entry);
     this.entries.clear();
+  }
 
-    // Clear any stray nodes inside our range
-    let n = this.start.nextSibling;
-    while (n && n !== this.end) {
-      const next = n.nextSibling;
-      n.remove();
-      n = next;
+  remove({ start, end, instance }) {
+    instance.dispose();
+    let node = start;
+    while (node) {
+      const next = node.nextSibling;
+      node.remove();
+      if (node === end) break;
+      node = next;
     }
   }
 
-  update(items) {
-    const parent = this.end.parentNode;
-    if (!parent) return;
-
-    const nextKeys = new Set(items.map((i) => i.key));
-
-    // Remove vanished keys
-    Array.from(this.entries.entries())
-      .filter(([key]) => !nextKeys.has(key))
-      .forEach(([, entry]) => {
-        entry.part.dispose?.();
-        entry.start.remove();
-        entry.end.remove();
-        this.entries.delete(entry.key);
-      });
-
-    // Ensure entries exist + update their content
-    items.forEach(({ key, tpl }) => {
-      if (!this.entries.has(key)) {
-        const s = document.createComment(`gl:key:${key}:start`);
-        const e = document.createComment(`gl:key:${key}:end`);
-        parent.insertBefore(s, this.end);
-        parent.insertBefore(e, this.end);
-
-        const part = new NodePart(e, this.ctxEffect);
-        part.start = s; // reuse the keyed start marker
-        part.bind(() => tpl);
-
-        this.entries.set(key, { key, start: s, end: e, part });
-      } else {
-        const entry = this.entries.get(key);
-        entry.part.update(() => tpl);
+  update(items, keys) {
+    for (const [key, entry] of this.entries) {
+      if (!keys.has(key)) {
+        this.remove(entry);
+        this.entries.delete(key);
       }
-    });
+    }
 
-    // Reorder by moving each key range in order before this.end
-    items
-      .map(({ key }) => this.entries.get(key))
-      .forEach((entry) => {
-        const frag = document.createDocumentFragment();
+    for (const { key, tpl } of items) {
+      let entry = this.entries.get(key);
 
-        // move [entry.start .. entry.end] inclusive
-        let n = entry.start;
-        while (n) {
-          const next = n.nextSibling;
-          frag.appendChild(n);
-          if (n === entry.end) break;
-          n = next;
+      if (entry && isTemplate(tpl) && entry.instance.strings === tpl.strings) {
+        entry.instance.update(tpl);
+      } else {
+        // Use an ordinary NodePart for entries to retain the helper's support
+        // for text, arrays, and other values besides templates.
+        const fragment = document.createDocumentFragment();
+        const end = document.createComment('gl:key');
+        fragment.append(end);
+
+        const previous = entry;
+        if (isTemplate(tpl)) {
+          const instance = instantiateTemplate(tpl);
+          const start = document.createComment('gl:key');
+          end.before(start, instance.fragment);
+          entry = { start, end, instance };
+        } else {
+          const part = new NodePart(end);
+          try {
+            part.bind(() => tpl);
+          } catch (error) {
+            part.dispose();
+            throw error;
+          }
+          entry = { start: part.start, end, instance: part };
         }
 
-        parent.insertBefore(frag, this.end);
-      });
+        (previous?.start ?? this.end).before(fragment);
+        if (previous) this.remove(previous);
+        this.entries.set(key, entry);
+      }
+    }
+
+    let anchor = this.end;
+    for (let index = items.length - 1; index >= 0; index--) {
+      const entry = this.entries.get(items[index].key);
+      if (entry.end.nextSibling !== anchor) {
+        let node = entry.start;
+        while (node) {
+          const next = node.nextSibling;
+          moveNodeBefore(node, anchor);
+          if (node === entry.end) break;
+          node = next;
+        }
+      }
+      anchor = entry.start;
+    }
   }
 }
