@@ -64,6 +64,7 @@ function componentClass(definition, options) {
         for (const hook of hooks.connected) hook();
       } catch (error) { scope.dispose(); throw error; }
     }
+    connectedMoveCallback() {}
     disconnectedCallback() {
       const runtime = this.__runtime;
       // Native range moves invoke disconnect/connect. Preserve runtime identity

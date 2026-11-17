@@ -240,7 +240,14 @@ function analyzeTemplate(result, doc = document) {
   const template = doc.createElement('template');
   const wrapper = result.kind === 'svg' ? 'svg' : result.kind === 'mathml' ? 'math' : null;
   template.innerHTML = wrapper ? `<${wrapper}>${markup}</${wrapper}>` : markup;
-  const plan = { template, wrapper, names };
+  const root = wrapper ? template.content.firstElementChild?.firstElementChild : template.content.firstElementChild;
+  const rawKey = root?.getAttribute('key') ?? null;
+  const keyMarkers = rawKey === null ? [] : extractMarkers(rawKey);
+  const keyIndex = keyMarkers.length === 1 && keyMarkers[0].full === rawKey
+    ? keyMarkers[0].index
+    : undefined;
+  root?.removeAttribute('key');
+  const plan = { template, wrapper, names, rawKey, keyIndex };
   kinds.set(result.kind, plan);
   return plan;
 }
@@ -261,13 +268,9 @@ function openingContext(markup) {
   }
   return { inTag, quote, text: markup.slice(start) };
 }
-function extractKey(result) {
-  const plan = analyzeTemplate(result);
-  const root = plan.wrapper ? plan.template.content.firstElementChild?.firstElementChild : plan.template.content.firstElementChild;
-  const raw = root?.getAttribute('key');
-  if (raw == null) return undefined;
-  const markers = extractMarkers(raw);
-  return markers.length === 1 && markers[0].full === raw ? result.values[markers[0].index] : raw;
+function extractKey(result, doc) {
+  const { rawKey, keyIndex } = analyzeTemplate(result, doc);
+  return keyIndex === undefined ? rawKey ?? undefined : result.values[keyIndex];
 }
 
 class AttrPart extends ValueBinding {
@@ -451,7 +454,8 @@ function moveRange(start, end, before) {
   const stop = end.nextSibling;
   while (node && node !== stop) {
     const next = node.nextSibling;
-    parent.insertBefore(node, before);
+    if (typeof parent.moveBefore === 'function') parent.moveBefore(node, before);
+    else parent.insertBefore(node, before);
     node = next;
   }
 }
@@ -482,7 +486,7 @@ class ListPart {
         return item;
       }
       if (isTemplateResult(item)) {
-        const key = readValue(extractKey(item));
+        const key = readValue(extractKey(item, this.end.ownerDocument));
         if (key !== undefined) return key;
         warn('array child template has no key; using positional ownership');
       }
@@ -1242,6 +1246,7 @@ function componentClass(definition, options) {
         for (const hook of hooks.connected) hook();
       } catch (error) { scope.dispose(); throw error; }
     }
+    connectedMoveCallback() {}
     disconnectedCallback() {
       const runtime = this.__runtime;
       // Native range moves invoke disconnect/connect. Preserve runtime identity

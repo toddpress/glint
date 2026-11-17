@@ -27,7 +27,14 @@ export function analyzeTemplate(result, doc = document) {
   const template = doc.createElement('template');
   const wrapper = result.kind === 'svg' ? 'svg' : result.kind === 'mathml' ? 'math' : null;
   template.innerHTML = wrapper ? `<${wrapper}>${markup}</${wrapper}>` : markup;
-  const plan = { template, wrapper, names };
+  const root = wrapper ? template.content.firstElementChild?.firstElementChild : template.content.firstElementChild;
+  const rawKey = root?.getAttribute('key') ?? null;
+  const keyMarkers = rawKey === null ? [] : extractMarkers(rawKey);
+  const keyIndex = keyMarkers.length === 1 && keyMarkers[0].full === rawKey
+    ? keyMarkers[0].index
+    : undefined;
+  root?.removeAttribute('key');
+  const plan = { template, wrapper, names, rawKey, keyIndex };
   kinds.set(result.kind, plan);
   return plan;
 }
@@ -48,11 +55,7 @@ function openingContext(markup) {
   }
   return { inTag, quote, text: markup.slice(start) };
 }
-export function extractKey(result) {
-  const plan = analyzeTemplate(result);
-  const root = plan.wrapper ? plan.template.content.firstElementChild?.firstElementChild : plan.template.content.firstElementChild;
-  const raw = root?.getAttribute('key');
-  if (raw == null) return undefined;
-  const markers = extractMarkers(raw);
-  return markers.length === 1 && markers[0].full === raw ? result.values[markers[0].index] : raw;
+export function extractKey(result, doc) {
+  const { rawKey, keyIndex } = analyzeTemplate(result, doc);
+  return keyIndex === undefined ? rawKey ?? undefined : result.values[keyIndex];
 }

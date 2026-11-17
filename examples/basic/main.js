@@ -1,9 +1,12 @@
-import './components/index.js';
+import { registerCounter, registerTaskBoard } from './components/index.js';
 
 import {
   mount,
   html,
 } from '../../src/index.js';
+
+registerCounter();
+registerTaskBoard();
 
 mount('#glint-app', html`
     <section>

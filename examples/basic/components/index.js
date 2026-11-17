@@ -1,2 +1,2 @@
-import './Counter.js';
-import './TaskBoard.js';
+export { registerCounter } from './Counter.js';
+export { registerTaskBoard } from './TaskBoard.js';

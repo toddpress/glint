@@ -30,7 +30,7 @@ export class ListPart {
         return item;
       }
       if (isTemplateResult(item)) {
-        const key = readValue(extractKey(item));
+        const key = readValue(extractKey(item, this.end.ownerDocument));
         if (key !== undefined) return key;
         warn('array child template has no key; using positional ownership');
       }

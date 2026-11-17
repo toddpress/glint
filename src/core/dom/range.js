@@ -9,7 +9,8 @@ export function moveRange(start, end, before) {
   const stop = end.nextSibling;
   while (node && node !== stop) {
     const next = node.nextSibling;
-    parent.insertBefore(node, before);
+    if (typeof parent.moveBefore === 'function') parent.moveBefore(node, before);
+    else parent.insertBefore(node, before);
     node = next;
   }
 }

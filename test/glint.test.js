@@ -183,6 +183,26 @@ test('array keys preserve identity without coercion and missing keys use positio
   assert.ok(!number.hasAttribute('key'));
 });
 
+test('mapped templates keep bindings and dispose event listeners when removed', () => {
+  const items = signal([{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]);
+  const clicks = [];
+  const row = ({ id, label }) => html`
+    <button key=${id} .value=${label} @click=${() => clicks.push(label)}>${label}</button>
+  `;
+  render(html`${() => items().map(row)}${[html`<i key="literal">static key</i>`]}`);
+  const [a, b] = app().querySelectorAll('button');
+
+  items([{ id: 'b', label: 'Updated B' }, { id: 'a', label: 'Updated A' }]);
+  assert.deepEqual([...app().querySelectorAll('button')], [b, a]);
+  assert.equal(b.value, 'Updated B');
+  b.click();
+  items([{ id: 'a', label: 'A' }]);
+  b.click();
+  assert.deepEqual(clicks, ['Updated B']);
+  assert.ok(!b.isConnected);
+  assert.ok(!app().querySelector('i').hasAttribute('key'));
+});
+
 test('duplicate keys fail before mutating list DOM', () => {
   const items = signal([1, 2]);
   render(html`${each(items, item => item, item => html`<span>${item}</span>`)}`);

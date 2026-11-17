@@ -4,7 +4,7 @@ Glint is a small, signal-powered library for native Web Components. It uses real
 
 ## Development
 
-Use Node 20 or newer and Python 3 for the static example server.
+Use Node 20.19+ or 22.12+.
 
 ```sh
 npm ci
@@ -15,7 +15,11 @@ npm run build:codepen
 npm start
 ```
 
-The example is at `/examples/basic/index.html` on the static server. Its import map loads the installed Preact dependency locally. `npm run test:browser` exercises the example and library in an installed Chromium browser; set `CHROMIUM_PATH` if it is not `/usr/bin/chromium`. The test uses Playwright Core and does not download a browser. `npm run check` checks JavaScript syntax; there is no configured lint tool or type checker.
+Open the URL Vite prints to choose Basics or Pedalboard. Run `npm run build:examples` to build the index and both examples into `examples/dist`, or `npm run preview:examples` to serve that build.
+
+Pedalboard can play a demo loop, loop a local audio file, or monitor a guitar interface with headphones. Tuna provides the compressor, overdrive and delay. Load a cabinet impulse response from disk to route through the Web Audio convolver. Guitar input requires browser permission and a secure origin such as localhost.
+
+`npm run test:browser` exercises the example and library in an installed Chromium browser; set `CHROMIUM_PATH` if it is not `/usr/bin/chromium`. The test uses Playwright Core and does not download a browser. `npm run check` checks JavaScript syntax; there is no configured lint tool or type checker.
 
 `dist/glint.js` is a self-contained ESM bundle. `dist/glint.codepen.js` also assigns the API to `window.Glint` for demonstrations. Normal library imports do not create globals. Package imports resolve to native ESM source; `@toddpress/glint/signals` and `@toddpress/glint/diagnostics` provide focused entry points. Node can import signals without a DOM, but rendering requires a browser document.
 
@@ -88,6 +92,14 @@ html`<ul>${each(tasks, task => task.id, (task, index) => html`
 ```
 
 `each` passes **item and index signals** to the view. A row is constructed once per key, and those signals update when its item or position changes. This keeps input state and child component identity through reordering and immutable item replacement. Use explicit keys for objects; unique primitives can be implicit keys. Duplicate keys throw before mutating the list. Keys retain their original identity (`1` and `'1'` are distinct). `each.value(...)` retains the repository's previous raw-item/raw-index callback form, with in-place template updates when possible.
+
+Plain JavaScript mapping works too:
+
+```js
+html`<ul>${() => tasks().map(task => html`
+  <li key=${task.id}>${task.title}</li>
+`)}</ul>`;
+```
 
 Array expressions flatten nested arrays/iterables. A child template's root `key` provides identity; missing keys use positional ownership. Changing template literal shape replaces that row's content. Removing rows disposes their bindings.
 

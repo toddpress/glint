@@ -1,6 +1,6 @@
 import { define, html } from '../../../src/index.js';;
 
-define('tsp-counter', (ctx) => {
+export const registerCounter = () => define('tsp-counter', (ctx) => {
   const { state, props } = ctx;
 
   const start = Number(props.start ?? 0);
